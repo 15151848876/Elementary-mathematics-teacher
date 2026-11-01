@@ -91,6 +91,33 @@ function qChart() {
   return { no: 8, stem: '统计水果数量：苹果 ' + values[0] + ' 个，香蕉 ' + values[1] + ' 个，橘子 ' + values[2] + ' 个。', kind: 'chart_bar', params: { labels: labels, values: values }, confidence: rnd(90, 97) };
 }
 
+/* 正方形周长面积 */
+function qSquare() {
+  var s = rnd(4, 12);
+  return { no: 9, stem: '一个正方形的边长是 ' + s + ' 厘米，它的周长和面积各是多少？', kind: 'square_peri_area', params: { s: s }, confidence: rnd(91, 98) };
+}
+
+/* 长方形反求边长 */
+function qRectReverse() {
+  var other = rnd(4, 12);
+  var known = rnd(4, 12);
+  var S = 2 * (other + known);
+  return { no: 10, stem: '一个长方形的周长是 ' + S + ' 厘米，其中一条边是 ' + known + ' 厘米，另一条边是多少厘米？', kind: 'rect_reverse', params: { S: S, known: known, unit: '厘米' }, confidence: rnd(91, 98) };
+}
+
+/* 三角形面积 */
+function qTriangle() {
+  var a = rnd(4, 10);
+  var h = rnd(3, 8);
+  return { no: 11, stem: '一个三角形的底是 ' + a + ' 厘米，高是 ' + h + ' 厘米，它的面积是多少？', kind: 'triangle_area', params: { a: a, h: h }, confidence: rnd(91, 98) };
+}
+
+/* 组合图形面积 */
+function qComposite() {
+  var a = rnd(3, 6), b = rnd(3, 6), c = rnd(3, 6), d = rnd(3, 6);
+  return { no: 12, stem: '一个 L 形组合图形，可以分成 ' + a + '×' + b + ' 和 ' + c + '×' + d + ' 两个长方形，求总面积。', kind: 'composite_area', params: { a: a, b: b, c: c, d: d }, confidence: rnd(91, 98) };
+}
+
 /* 轮换：竖式必出（第 1 题固定），另从剩余七类里随机抽 2 题（保证新原语能随机出现，且竖式稳定可见） */
 /* 竖式乘法 */
 function qVerticalMul() {
@@ -126,15 +153,17 @@ function qExpression() {
 function mockQuestions() {
   // 第 1 题固定竖式（加法或减法交替，覆盖两种竖式）
   var first = Math.random() < 0.5 ? qVerticalAdd() : qVerticalSub();
-  // 第 2 题固定一个「乘除/综合运算」类（保证新引擎可见），第 3 题从其余类随机抽
+  // 第 2 题固定一个「乘除/综合运算」类（保证新引擎可见）
   var calc = pick([qVerticalMul, qVerticalDiv, qExpression]);
-  var rest = [qBarMore, qFracAdd, qNumberLine, qCounter, qGeoBoard, qBalance, qChart];
-  var idx = [0, 1, 2, 3, 4, 5, 6];
-  for (var i = idx.length - 1; i > 0; i--) {
-    var j = rnd(0, i);
-    var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+  // 第 3 题：几何类优先（本轮目标），从几何题库随机抽；其余类作为补充池
+  var geo = [qGeoBoard, qSquare, qRectReverse, qTriangle, qComposite];
+  var rest = [qBarMore, qFracAdd, qNumberLine, qCounter, qBalance, qChart];
+  var third;
+  if (Math.random() < 0.6) {
+    third = pick(geo)();
+  } else {
+    third = pick(rest)();
   }
-  var third = rest[idx[0]]();
   var picked = [first, calc(), third];
   return picked;
 }

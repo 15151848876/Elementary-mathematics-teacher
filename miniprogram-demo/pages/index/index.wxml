@@ -1,7 +1,7 @@
 <view class="page">
   <view class="topbar">
     <view class="brand">数学小步</view>
-    <view class="ver">v0.6</view>
+    <view class="ver">v0.7</view>
     <view class="count">{{solved}} 题已讲</view>
   </view>
 
@@ -31,7 +31,7 @@
         <text class="chevron">›</text>
       </view>
 
-      <view class="demo-note">v0.6：新增乘法/除法竖式 + 通用脱式计算（加减乘除、括号、分数、小数都能分步讲）。「看示例题」会随机抽 3 类演示。</view>
+      <view class="demo-note">v0.7：新增几何板块——正方形、长方形反求边长、三角形、组合图形的周长与面积。「看示例题」会随机抽 3 类演示。</view>
     </view>
   </block>
 
@@ -192,6 +192,47 @@
               <view class="gbcell {{item.cls}}" wx:for="{{snap.cells}}" wx:key="i"></view>
             </view>
             <view class="gbeq" wx:if="{{snap.eq}}">{{snap.eq}}</view>
+          </view>
+        </block>
+
+        <block wx:elif="{{snap.kind === 'shape'}}">
+          <view class="shwrap">
+            <view class="shsvg">
+              <!-- 正方形 -->
+              <svg wx:if="{{snap.shape === 'square'}}" viewBox="0 0 200 200" class="sh-svg">
+                <rect x="40" y="40" width="120" height="120" class="sh-fill {{snap.hl === 'area' ? 'on' : ''}}" rx="2" />
+                <rect x="40" y="40" width="120" height="120" fill="none" class="sh-stroke {{snap.hl === 'peri' ? 'on' : ''}}" stroke-width="3" />
+                <text x="100" y="180" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
+                <text x="100" y="105" text-anchor="middle" class="sh-dim dark">{{snap.a}}</text>
+              </svg>
+              <!-- 长方形 -->
+              <svg wx:elif="{{snap.shape === 'rect'}}" viewBox="0 0 240 160" class="sh-svg">
+                <rect x="30" y="40" width="180" height="80" fill="none" class="sh-stroke" stroke-width="3" />
+                <rect x="30" y="40" width="180" height="80" class="sh-fill {{snap.hl === 'area' || snap.hl === 'check' ? 'on' : ''}}" rx="2" />
+                <text x="120" y="145" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
+                <text x="10" y="85" text-anchor="middle" class="sh-dim">{{snap.b || '?'}}</text>
+              </svg>
+              <!-- 三角形 -->
+              <svg wx:elif="{{snap.shape === 'triangle'}}" viewBox="0 0 220 160" class="sh-svg">
+                <polygon points="30,130 190,130 190,50" class="sh-fill {{snap.hl === 'area' ? 'on' : ''}}" />
+                <polygon points="30,130 190,130 190,50" fill="none" class="sh-stroke" stroke-width="3" />
+                <line x1="190" y1="50" x2="190" y2="130" stroke-dasharray="4,3" class="sh-dash" stroke-width="2" />
+                <text x="110" y="152" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
+                <text x="205" y="92" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
+              </svg>
+              <!-- 组合图形（L形：两块矩形） -->
+              <svg wx:elif="{{snap.shape === 'composite'}}" viewBox="0 0 240 200" class="sh-svg">
+                <rect x="40" y="40" width="120" height="90" class="sh-fill {{snap.hl === 'p1' ? 'on' : (snap.hl === 'sum' ? 'on' : '')}}" />
+                <rect x="40" y="40" width="120" height="90" fill="none" class="sh-stroke" stroke-width="3" />
+                <rect x="40" y="130" width="70" height="50" class="sh-fill alt {{snap.hl === 'p2' ? 'on' : (snap.hl === 'sum' ? 'on' : '')}}" />
+                <rect x="40" y="130" width="70" height="50" fill="none" class="sh-stroke" stroke-width="3" />
+                <text x="100" y="30" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
+                <text x="25" y="90" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
+                <text x="75" y="198" text-anchor="middle" class="sh-dim">{{snap.c}}</text>
+                <text x="18" y="158" text-anchor="middle" class="sh-dim">{{snap.d}}</text>
+              </svg>
+            </view>
+            <view class="sheq" wx:if="{{snap.eq}}">{{snap.eq}}</view>
           </view>
         </block>
 

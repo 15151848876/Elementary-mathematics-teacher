@@ -77,6 +77,21 @@
 .gbcell.all{background:#c3d4ff;border-color:#8fa9ee}
 .gbeq{text-align:center;margin-top:24rpx;font-size:28rpx;font-weight:650;color:#2b3a5c}
 
+/* ---------- 几何图形（SVG） ---------- */
+.shwrap{padding:12rpx 8rpx;display:flex;flex-direction:column;align-items:center}
+.shsvg{width:100%;max-width:480rpx;margin:0 auto}
+.sh-svg{width:100%;height:auto;display:block}
+.sh-fill{fill:#d5e0ff;opacity:0.25}
+.sh-fill.on{opacity:0.85;fill:#c3d4ff}
+.sh-fill.alt{fill:#ffd7b5}
+.sh-fill.alt.on{fill:#ffcf9f;opacity:0.9}
+.sh-stroke{stroke:#3b4a70}
+.sh-stroke.on{stroke:#2b5cff;stroke-width:5}
+.sh-dash{stroke:#8a9bcc}
+.sh-dim{font-size:16px;fill:#5a6a8c}
+.sh-dim.dark{fill:#2b3a5c;font-weight:700}
+.sheq{text-align:center;margin-top:20rpx;font-size:28rpx;font-weight:650;color:#2b3a5c}
+
 /* ---------- 天平方程 ---------- */
 .blwrap{padding:30rpx 10rpx}
 .blbeam{display:flex;align-items:flex-start;justify-content:center}

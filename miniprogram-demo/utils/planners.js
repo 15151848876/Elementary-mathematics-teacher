@@ -817,6 +817,133 @@ function planGeoBoard(r, c) {
   return { kind: 'geoboard', answer: '周长 ' + peri + '，面积 ' + area, steps: steps };
 }
 
+/* ============================ 几何：正方形 ============================ */
+
+function planSquare(s) {
+  var area = s * s;
+  var peri = 4 * s;
+  var steps = [];
+  steps.push({
+    title: '画一个正方形',
+    text: '正方形四条边一样长，都是 ' + s + '。',
+    snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: null, eq: '' }
+  });
+  steps.push({
+    title: '算周长',
+    text: '周长 = 边长 × 4 = ' + s + ' × 4 = ' + peri + '。',
+    snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'peri', eq: '周长 = ' + s + ' × 4 = ' + peri }
+  });
+  steps.push({
+    title: '想一想面积',
+    text: '面积是“铺满”的大小。先自己想一想：' + s + ' × ' + s + ' 等于几？',
+    ask: {
+      question: s + ' × ' + s + ' = ?',
+      options: [String(area), String(s * 4), String(s + s)],
+      answer: 0,
+      hint: '面积 = 边长 × 边长 = ' + s + ' × ' + s + ' = ' + area + '。'
+    },
+    snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'area', eq: '面积 = ' + s + ' × ' + s + ' = ?' }
+  });
+  steps.push({
+    title: '答案是 ' + area,
+    text: '面积 = 边长 × 边长 = ' + s + ' × ' + s + ' = ' + area + '。',
+    snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'area', eq: '面积 = ' + s + ' × ' + s + ' = ' + area }
+  });
+  return { kind: 'shape', answer: '周长 ' + peri + '，面积 ' + area, steps: steps };
+}
+
+/* ============================ 几何：已知周长反求边长/一边 ============================ */
+
+function planRectReverse(S, known, unit) {
+  unit = unit || '';
+  var side = known;
+  var other = Math.round((S - 2 * known) / 2);
+  var steps = [];
+  steps.push({
+    title: '画出来想一想',
+    text: '长方形周长是 ' + S + unit + '，其中一边是 ' + known + unit + '，求另一边。',
+    snap: { kind: 'shape', shape: 'rect', a: known, b: null, hl: null, eq: '周长 = ' + S }
+  });
+  steps.push({
+    title: '周长的一半是长+宽',
+    text: '周长 =（长 + 宽）× 2，所以长 + 宽 = ' + S + ' ÷ 2 = ' + (S / 2) + '。',
+    snap: { kind: 'shape', shape: 'rect', a: known, b: null, hl: 'half', eq: '长 + 宽 = ' + S + ' ÷ 2 = ' + (S / 2) }
+  });
+  steps.push({
+    title: '求另一边',
+    text: '另一边 = ' + (S / 2) + ' − ' + known + ' = ' + other + '。',
+    snap: { kind: 'shape', shape: 'rect', a: known, b: other, hl: 'other', eq: '另一边 = ' + (S / 2) + ' − ' + known + ' = ' + other }
+  });
+  steps.push({
+    title: '验算一下',
+    text: '（' + known + ' + ' + other + '）× 2 = ' + (known + other) + ' × 2 = ' + S + '。对得上。',
+    snap: { kind: 'shape', shape: 'rect', a: known, b: other, hl: 'check', eq: '(' + known + ' + ' + other + ') × 2 = ' + S }
+  });
+  return { kind: 'shape', answer: '另一边 ' + other + unit, steps: steps };
+}
+
+/* ============================ 几何：三角形面积 ============================ */
+
+function planTriangle(a, h) {
+  // 直角边为底 a、高 h 的三角形（或一般三角形，用 底×高÷2）
+  var area = a * h / 2;
+  var areaTxt = (area % 1 === 0) ? String(area) : (a * h) + '/2';
+  var half = a * h;
+  var steps = [];
+  steps.push({
+    title: '画出三角形',
+    text: '底是 ' + a + '，高是 ' + h + '。',
+    snap: { kind: 'shape', shape: 'triangle', a: a, b: h, hl: null, eq: '' }
+  });
+  steps.push({
+    title: '三角形是长方形的一半',
+    text: '把两个一样的三角形拼起来，就是一个长方形：底 ' + a + ' × 高 ' + h + ' = ' + half + '。',
+    snap: { kind: 'shape', shape: 'triangle', a: a, b: h, hl: 'doub', eq: '底 × 高 = ' + a + ' × ' + h + ' = ' + half }
+  });
+  steps.push({
+    title: '再除以 2',
+    text: '三角形只是这个长方形的一半，所以再 ÷ 2。',
+    snap: { kind: 'shape', shape: 'triangle', a: a, b: h, hl: 'half', eq: '面积 = ' + a + ' × ' + h + ' ÷ 2 = ' + areaTxt }
+  });
+  steps.push({
+    title: '答案是 ' + areaTxt,
+    text: '面积 = 底 × 高 ÷ 2 = ' + a + ' × ' + h + ' ÷ 2 = ' + areaTxt + '。',
+    snap: { kind: 'shape', shape: 'triangle', a: a, b: h, hl: 'area', eq: '面积 = ' + areaTxt }
+  });
+  return { kind: 'shape', answer: '面积 ' + areaTxt, steps: steps };
+}
+
+/* ============================ 几何：组合图形（拆成两个矩形） ============================ */
+
+function planComposite(a, b, c, d) {
+  // 一个 L 形 / 组合矩形：可拆成 a×b 和 c×d 两块（约定两块共享一条边，边长均为整数）
+  var s1 = a * b;
+  var s2 = c * d;
+  var total = s1 + s2;
+  var steps = [];
+  steps.push({
+    title: '把组合图形拆开',
+    text: '这个图形可以拆成两个长方形：一块 ' + a + '×' + b + '，另一块 ' + c + '×' + d + '。',
+    snap: { kind: 'shape', shape: 'composite', a: a, b: b, c: c, d: d, hl: null, eq: '' }
+  });
+  steps.push({
+    title: '算第一块的面积',
+    text: a + ' × ' + b + ' = ' + s1 + '。',
+    snap: { kind: 'shape', shape: 'composite', a: a, b: b, c: c, d: d, hl: 'p1', eq: '第一块 = ' + a + ' × ' + b + ' = ' + s1 }
+  });
+  steps.push({
+    title: '算第二块的面积',
+    text: c + ' × ' + d + ' = ' + s2 + '。',
+    snap: { kind: 'shape', shape: 'composite', a: a, b: b, c: c, d: d, hl: 'p2', eq: '第二块 = ' + c + ' × ' + d + ' = ' + s2 }
+  });
+  steps.push({
+    title: '加起来',
+    text: '总面积 = ' + s1 + ' + ' + s2 + ' = ' + total + '。',
+    snap: { kind: 'shape', shape: 'composite', a: a, b: b, c: c, d: d, hl: 'sum', eq: '总面积 = ' + s1 + ' + ' + s2 + ' = ' + total }
+  });
+  return { kind: 'shape', answer: '面积 ' + total, steps: steps };
+}
+
 /* ============================ 天平与简易方程 ============================ */
 
 function planBalance(a, b, c) {
@@ -926,6 +1053,7 @@ var META = {
   numberline: { templateName: '数轴', tag: '数的加减' },
   counter: { templateName: '小棒与计数器', tag: '数的认识' },
   geoboard: { templateName: '几何板', tag: '周长与面积' },
+  shape: { templateName: '几何图形', tag: '周长与面积' },
   balance: { templateName: '天平方程', tag: '简易方程' },
   chart: { templateName: '统计图', tag: '数据统计' },
   expression: { templateName: '脱式计算', tag: '综合运算' }
@@ -963,6 +1091,18 @@ function build(q) {
   } else if (q.kind === 'geoboard_rect') {
     plan = planGeoBoard(p.r, p.c);
     topic = '周长与面积';
+  } else if (q.kind === 'square_peri_area') {
+    plan = planSquare(p.s);
+    topic = '正方形周长面积';
+  } else if (q.kind === 'rect_reverse') {
+    plan = planRectReverse(p.S, p.known, p.unit || '');
+    topic = '长方形反求边长';
+  } else if (q.kind === 'triangle_area') {
+    plan = planTriangle(p.a, p.h);
+    topic = '三角形面积';
+  } else if (q.kind === 'composite_area') {
+    plan = planComposite(p.a, p.b, p.c, p.d);
+    topic = '组合图形面积';
   } else if (q.kind === 'balance_eq') {
     plan = planBalance(p.a, p.b, p.c);
     topic = '天平解方程';
@@ -1019,6 +1159,10 @@ module.exports = {
   planNumberLine: planNumberLine,
   planCounter: planCounter,
   planGeoBoard: planGeoBoard,
+  planSquare: planSquare,
+  planRectReverse: planRectReverse,
+  planTriangle: planTriangle,
+  planComposite: planComposite,
   planBalance: planBalance,
   planChart: planChart,
   build: build
