@@ -86,6 +86,11 @@
         </view>
 
         <view class="save-note">每道题的步骤都是引擎现算的，不是提前写死的</view>
+
+        <view class="result-actions">
+          <button class="control-btn" bindtap="goHome">返回主页</button>
+          <button class="control-btn primary" bindtap="retry">重新拍一张</button>
+        </view>
       </block>
     </view>
   </block>
