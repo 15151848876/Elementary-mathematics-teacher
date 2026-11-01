@@ -70,11 +70,13 @@
 .cteq{text-align:center;margin-top:16rpx;font-size:28rpx;font-weight:650;color:#0b7d52}
 
 /* ---------- 几何板 ---------- */
-.gbwrap{padding:20rpx 10rpx}
-.gbgrid{display:grid;gap:4rpx;max-width:520rpx;margin:0 auto}
+.gbwrap{padding:20rpx 10rpx;position:relative}
+.gbgrid{display:grid;gap:4rpx;max-width:520rpx;margin:0 auto;position:relative}
 .gbcell{aspect-ratio:1;border-radius:6rpx;background:#f2f5fb;border:2rpx solid #d7dfeb;box-sizing:border-box}
 .gbcell.edge{background:#d5e0ff;border-color:#8fa9ee}
 .gbcell.all{background:#c3d4ff;border-color:#8fa9ee}
+/* 周长示意：一圈彩色粗边框，盖在格子网格上，不画格子、不碰四角 */
+.gbperim{position:absolute;inset:0;border:8rpx solid #e8593c;border-radius:10rpx;pointer-events:none;box-sizing:border-box}
 .gbeq{text-align:center;margin-top:24rpx;font-size:28rpx;font-weight:650;color:#2b3a5c}
 
 /* ---------- 几何图形（纯 view/CSS，小程序不支持 SVG） ---------- */

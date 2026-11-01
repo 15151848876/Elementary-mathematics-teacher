@@ -787,18 +787,6 @@ function planGeoBoard(r, c, want) {
     return out;
   }
 
-  /* 周长视角：只填外围一圈（围一圈的格子），内部留白 */
-  function edgeCells() {
-    var out = [];
-    for (var i = 0; i < r; i++) {
-      for (var j = 0; j < c; j++) {
-        var rim = (i === 0 || i === r - 1 || j === 0 || j === c - 1);
-        out.push({ i: i, j: j, cls: rim ? 'all' : '' });
-      }
-    }
-    return out;
-  }
-
   steps.push({
     title: '在方格纸上画一个长方形',
     text: '长 ' + c + ' 格，宽 ' + r + ' 格。每一小格就是 1 个单位。',
@@ -809,12 +797,12 @@ function planGeoBoard(r, c, want) {
     steps.push({
       title: '先数一周有多少格（周长）',
       text: '沿着边数：上面 ' + c + ' 格，下面 ' + c + ' 格，左边 ' + r + ' 格，右边 ' + r + ' 格。',
-      snap: { kind: 'geoboard', rows: r, cols: c, cells: edgeCells(), hl: 'edge', eq: '' }
+      snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, false), hl: 'edge', eq: '' }
     });
     steps.push({
       title: '算周长',
       text: '周长 =（' + c + ' + ' + r + '）× 2 = ' + peri + '。数的是“围一圈”的格子数。',
-      snap: { kind: 'geoboard', rows: r, cols: c, cells: edgeCells(), hl: 'edge', eq: '周长 = (' + c + ' + ' + r + ') × 2 = ' + peri }
+      snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, false), hl: 'edge', eq: '周长 = (' + c + ' + ' + r + ') × 2 = ' + peri }
     });
   }
 

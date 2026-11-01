@@ -195,6 +195,8 @@
           <view class="gbwrap">
             <view class="gbgrid" style="grid-template-columns:repeat({{snap.cols}},1fr)">
               <view class="gbcell {{item.cls}}" wx:for="{{snap.cells}}" wx:key="i"></view>
+              <!-- 周长：一圈彩色边框，示意"围一圈"；不画格子、不碰四角 -->
+              <view class="gbperim" wx:if="{{snap.hl === 'edge'}}"></view>
             </view>
             <view class="gbeq" wx:if="{{snap.eq}}">{{snap.eq}}</view>
           </view>
