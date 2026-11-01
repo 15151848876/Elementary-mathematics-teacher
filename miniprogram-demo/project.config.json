@@ -1,0 +1,17 @@
+{
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "appid": "wxec5383611ef51aa4",
+  "projectname": "math-step-demo",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": false,
+    "enhance": true,
+    "packNpmManually": false,
+    "packNpmRelationList": []
+  },
+  "condition": {},
+  "isGameTourist": false
+}

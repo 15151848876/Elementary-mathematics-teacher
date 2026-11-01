@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "数学小步",
+    "navigationBarBackgroundColor": "#f4f6fb",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6fb",
+    "backgroundTextStyle": "light"
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

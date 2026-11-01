@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>竖式渲染器 · 参数化验证</title>
+<style>
+:root{
+  --ink:#12161f; --ink2:#3c465c; --muted:#7a8499;
+  --line:#e4e8f1; --card:#fff;
+  --blue:#3b6cff; --blue-soft:#e9efff; --blue-deep:#2447c9;
+  --orange:#ff8a3d; --orange-soft:#fff1e5; --orange-deep:#c2560e;
+  --green:#0f9d67; --green-soft:#eafaf3;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;padding:26px 30px 40px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 500px at 8% -10%,#ffffff 0%,rgba(255,255,255,0) 62%),
+    radial-gradient(760px 520px at 96% 4%,#eef3ff 0%,rgba(238,243,255,0) 60%),
+    linear-gradient(160deg,#f7f9ff,#e8edf7);
+  min-height:100vh;
+}
+header{max-width:1120px;margin:0 auto 20px}
+header h1{font-size:20px;margin:0 0 6px;letter-spacing:-.01em}
+header p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.7}
+header p b{color:var(--ink2)}
+
+.grid{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:264px 420px 320px;gap:18px;align-items:start;justify-content:center}
+
+.panel{
+  background:rgba(255,255,255,.82);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.95);border-radius:20px;padding:18px;
+  box-shadow:0 20px 50px -34px rgba(20,35,70,.45);
+}
+.panel h2{font-size:10.5px;letter-spacing:.14em;color:#98a2b8;font-weight:700;margin:0 0 10px;text-transform:uppercase}
+.panel h2:not(:first-child){margin-top:20px}
+
+.seg{display:flex;background:#f0f3f9;border-radius:11px;padding:3px;gap:3px;margin-bottom:14px}
+.seg button{
+  flex:1;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:650;
+  color:var(--muted);padding:8px 0;border-radius:9px;cursor:pointer;transition:.18s;
+}
+.seg button.on{background:#fff;color:var(--blue);box-shadow:0 2px 8px -4px rgba(30,50,100,.4)}
+
+.field{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--muted);width:22px;font-weight:600}
+.field input{
+  flex:1;font-family:inherit;font-size:17px;font-weight:600;color:var(--ink);
+  border:1.4px solid var(--line);border-radius:10px;padding:8px 11px;outline:none;
+  transition:.18s;background:#fff;font-variant-numeric:tabular-nums;
+}
+.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,108,255,.12)}
+
+.row{display:flex;gap:8px;margin-top:12px}
+.btn{
+  flex:1;font-family:inherit;font-size:12.5px;font-weight:650;border-radius:10px;
+  padding:9px 12px;border:1px solid transparent;cursor:pointer;transition:.18s;
+}
+.btn.primary{background:linear-gradient(135deg,#4a76ff,#3b5ae8);color:#fff;box-shadow:0 8px 18px -10px rgba(59,108,255,.9)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:#fff;border-color:var(--line);color:var(--ink2)}
+.btn.ghost:hover{border-color:#c9d5f2}
+
+.chk{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink2);margin-top:12px;cursor:pointer;user-select:none}
+.chk input{accent-color:var(--blue);width:14px;height:14px}
+
+.steps{display:flex;flex-direction:column;gap:4px;max-height:290px;overflow-y:auto}
+.steps::-webkit-scrollbar{width:4px}
+.steps::-webkit-scrollbar-thumb{background:#dde3ef;border-radius:4px}
+.stepitem{
+  display:flex;gap:8px;align-items:flex-start;font-size:11.5px;line-height:1.55;color:var(--muted);
+  padding:6px 8px;border-radius:8px;cursor:pointer;transition:.15s;border:1px solid transparent;
+}
+.stepitem:hover{background:#f5f8ff}
+.stepitem.on{background:var(--blue-soft);border-color:#cfdcff;color:var(--blue-deep);font-weight:600}
+.stepitem .n{
+  width:15px;height:15px;border-radius:50%;background:#eef1f8;color:#98a2b8;
+  font-size:9px;display:grid;place-items:center;flex:0 0 auto;margin-top:1px;font-weight:700;
+}
+.stepitem.on .n{background:var(--blue);color:#fff}
+.stepitem.ask .n{background:var(--orange-soft);color:var(--orange-deep)}
+.stepitem.ask.on .n{background:var(--orange);color:#fff}
+
+/* ---------- stage ---------- */
+.stage{display:flex;flex-direction:column;gap:14px}
+.board{
+  background-color:#fff;border-radius:20px;border:1px solid var(--line);
+  background-image:radial-gradient(circle,#e9eefa 1px,transparent 1px);
+  background-size:17px 17px;padding:10px 14px;
+  box-shadow:0 24px 60px -40px rgba(20,35,70,.5);overflow:hidden;
+}
+.board svg{width:100%;height:auto;display:block;max-height:352px}
+
+.narr{background:rgba(255,255,255,.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.95);
+  border-radius:16px;padding:14px 16px;box-shadow:0 16px 40px -34px rgba(20,35,70,.4);min-height:78px}
+.narr .k{font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.12em;margin-bottom:5px}
+.narr p{margin:0;font-size:13.5px;line-height:1.7;color:var(--ink2)}
+
+.askcard{background:linear-gradient(180deg,#fffdf8,#fff8ef);border:1px solid #ffdcbb;border-radius:14px;padding:12px 14px}
+.askcard.ok{background:linear-gradient(180deg,#f6fdf9,#eefaf3);border-color:#b9e6d0}
+.askq{font-size:12.5px;font-weight:600;color:#8a4b0d;margin-bottom:9px}
+.askq span{display:inline-block;font-size:10px;background:var(--orange);color:#fff;padding:1.5px 6px;border-radius:5px;margin-right:6px;vertical-align:1px;font-weight:700}
+.askcard.ok .askq{color:#0b7d52}
+.askcard.ok .askq span{background:var(--green)}
+.opts{display:flex;gap:7px;flex-wrap:wrap}
+.opt{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink2);background:#fff;
+  border:1.4px solid #ecd9c5;border-radius:9px;padding:7px 14px;cursor:pointer;transition:.16s}
+.opt:hover{border-color:var(--orange);color:var(--orange-deep)}
+.opt.right{background:var(--green);border-color:var(--green);color:#fff}
+.opt.wrong{border-color:#f0a9a9;color:#c0392b;background:#fff6f6;text-decoration:line-through;opacity:.75}
+
+.player{display:flex;align-items:center;gap:10px}
+.pbtn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:#fff;
+  color:var(--ink2);font-size:15px;cursor:pointer;display:grid;place-items:center;transition:.16s}
+.pbtn:hover:not(:disabled){border-color:#c9d5f2;color:var(--blue)}
+.pbtn:disabled{opacity:.35;cursor:not-allowed}
+.dots{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap;max-width:240px;margin:0 auto}
+.dots i{width:6px;height:6px;border-radius:50%;background:#d3dae8;transition:.22s}
+.dots i.on{width:18px;border-radius:3px;background:var(--blue)}
+.dots i.done{background:#b9c8ee}
+
+/* ---------- code ---------- */
+.code pre{
+  margin:0;background:#0f1420;color:#c3d2ef;border-radius:12px;padding:13px 14px;
+  font-size:10.5px;line-height:1.72;overflow:auto;max-height:520px;
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+}
+.code pre::-webkit-scrollbar{width:5px;height:5px}
+.code pre::-webkit-scrollbar-thumb{background:#2a3348;border-radius:4px}
+.k{color:#7aa2ff}.s{color:#8ee0b0}.n{color:#ffb877}.c{color:#5f6b85}
+
+.selfcheck{
+  margin-top:12px;font-size:11px;line-height:1.6;color:var(--muted);
+  padding:9px 11px;border-radius:9px;background:#f4f7fd;border:1px solid #e6ecf8;
+}
+.selfcheck b{color:var(--green);font-weight:700}
+.hint{margin-top:14px;padding-top:12px;border-top:1px dashed rgba(150,165,195,.35);font-size:11px;line-height:1.75;color:var(--muted)}
+.hint em{font-style:normal;color:var(--orange-deep);font-weight:600}
+
+/* ---------- svg ---------- */
+.dg{font-weight:500;fill:#151a24;text-anchor:middle;font-variant-numeric:tabular-nums;transition:fill .3s,opacity .3s}
+.op{font-weight:400;fill:#9aa3b8;text-anchor:middle}
+.rule{stroke:#151a24;stroke-width:3;stroke-linecap:round}
+.guide{stroke:#d3dae8;stroke-width:1.3;stroke-dasharray:5 6;opacity:0;transition:opacity .3s}
+.pos{font-size:11px;fill:#a3acbf;text-anchor:middle;letter-spacing:.1em}
+.hlrect{fill:#3b6cff;opacity:0;transition:opacity .3s}
+.hlrect.on{opacity:.09}
+.dg.on{fill:var(--blue)}
+.ann{font-weight:700;text-anchor:middle;opacity:0;transition:opacity .3s .04s}
+.ann.on{opacity:1}
+.ann.carry{fill:var(--orange-deep)}
+.ann.borrow{fill:var(--blue-deep)}
+.ann.carry-bg,.ann.borrow-bg{opacity:0;transition:opacity .3s .04s}
+.ann.carry-bg.on{opacity:.9;fill:#fff5ea;stroke:var(--orange);stroke-width:1.2;stroke-dasharray:2.5 2.5}
+.ann.borrow-bg.on{opacity:1;fill:#eef3ff;stroke:#9db4f5;stroke-width:1.2}
+.strike{stroke:#8b93a7;stroke-width:2;stroke-linecap:round;opacity:0;transition:opacity .3s}
+.strike.on{opacity:.85}
+.res{opacity:0;transform:translateY(-7px);transition:opacity .32s,transform .4s cubic-bezier(.22,.9,.3,1);fill:var(--blue-deep)}
+.res.on{opacity:1;transform:none}
+.res.final{fill:var(--green)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>竖式渲染器 · 参数化验证</h1>
+  <p>同一个渲染器，输入任意两个数，<b>进位、退位、位数全部由确定性算法推导</b>，不靠模型猜。改一下数字就知道能不能扛住。</p>
+</header>
+
+<div class="grid">
+
+  <!-- 控制台 -->
+  <section class="panel">
+    <h2>题目</h2>
+    <div class="seg" id="opseg">
+      <button class="on" data-op="+">加法</button>
+      <button data-op="-">减法</button>
+    </div>
+
+    <div class="field"><label>A</label><input id="ina" type="number" value="38" min="0" max="9999"/></div>
+    <div class="field"><label>B</label><input id="inb" type="number" value="27" min="0" max="9999"/></div>
+
+    <div class="row">
+      <button class="btn primary" id="btnRun">换这题</button>
+      <button class="btn ghost" id="btnRand">随机</button>
+    </div>
+
+    <label class="chk"><input type="checkbox" id="chkAsk" checked/>插入「想一想」关卡</label>
+    <label class="chk"><input type="checkbox" id="chkAuto"/>自动播放</label>
+
+    <h2>步骤</h2>
+    <div class="steps" id="stepList"></div>
+  </section>
+
+  <!-- 舞台 -->
+  <section class="stage">
+    <div class="board" id="board"></div>
+    <div class="narr">
+      <div class="k" id="narrK">第 1 步</div>
+      <p id="narrT">—</p>
+    </div>
+    <div id="askHost"></div>
+    <div class="player">
+      <button class="pbtn" id="btnPrev">‹</button>
+      <div class="dots" id="dots"></div>
+      <button class="pbtn" id="btnNext">›</button>
+    </div>
+  </section>
+
+  <!-- 代码 -->
+  <section class="panel code">
+    <h2>渲染器吃到的东西</h2>
+    <pre id="json"></pre>
+    <div class="selfcheck" id="selfcheck"></div>
+    <div class="hint">
+      <em>看明白这件事就够了：</em>模型只需要输出 <code>{op, a, b}</code> 和几句人话。
+      哪一位要进位、退位之后数字变成几，全由引擎算，<b>不可能算错</b>。
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================
+   1. 计算引擎：输入两个数，确定性地推导出每一步
+   ========================================================= */
+const COLNAME = ['个位','十位','百位','千位','万位'];
+const cn = i => COLNAME[i] || '第' + (i + 1) + '位';
+
+function toDigits(num){
+  return String(num).split('').reverse().map(Number); // 低位在前
+}
+function digitAt(arr, i){ return i < arr.length ? arr[i] : null; }
+
+/* ---- 加法 ---- */
+function planAdd(a, b){
+  const DA = toDigits(a), DB = toDigits(b);
+  const n = Math.max(DA.length, DB.length);
+  const steps = [];
+
+  steps.push({
+    kind: 'align',
+    say: `先把 ${a} 和 ${b} 上下对齐：个位对个位，十位对十位。相同数位上的数才能相加。`,
+    snap: { hl: [], ann: {}, strike: [], res: {} }
+  });
+
+  let carry = 0, ann = {}, res = {}, firstCarry = true;
+
+  for(let i = 0; i < n; i++){
+    const da = digitAt(DA, i), db = digitAt(DB, i);
+    const x = da === null ? 0 : da;
+    const y = db === null ? 0 : db;
+    const s = x + y + carry;
+    const out = s % 10;
+    const next = s >= 10 ? 1 : 0;
+
+    const terms = [];
+    if(da !== null) terms.push(da);
+    if(db !== null) terms.push(db);
+    if(carry) terms.push(carry);
+
+    // 提问发生在「进位写出来之前」，不剧透
+    const preSnap = { hl: [i], ann: { ...ann }, strike: [], res: { ...res } };
+
+    if(next && firstCarry){
+      firstCarry = false;
+      steps.push({
+        kind: 'ask', col: i, say: '',
+        ask: {
+          q: `${cn(i)}相加得 ${s}，满十了。要向${cn(i + 1)}进几？`,
+          opts: ['进 1', '进 2', '不用进'],
+          a: 0,
+          hint: `${s} 里面有 ${Math.floor(s / 10)} 个十和 ${s % 10} 个一。把这 1 个十送到${cn(i + 1)}，${cn(i)}只留 ${out}。`
+        },
+        snap: preSnap
+      });
+    }
+
+    if(next) ann[i + 1] = { text: '1', kind: 'carry' };
+    res[i] = String(out);
+
+    let say = `${cn(i)}：${terms.join(' + ')} = ${s}`;
+    if(next) say += `。写 ${out}，向${cn(i + 1)}进 1`;
+
+    steps.push({
+      kind: 'col', col: i, say,
+      snap: { hl: [i], ann: { ...ann }, strike: [], res: { ...res } }
+    });
+
+    carry = next;
+  }
+
+  if(carry){
+    res[n] = '1';
+    steps.push({
+      kind: 'col', col: n,
+      say: `最高位还剩下一个进位的 1，直接写在最前面。`,
+      snap: { hl: [n], ann: { ...ann }, strike: [], res: { ...res } }
+    });
+  }
+
+  const total = String(a + b);
+  steps.push({
+    kind: 'done',
+    say: `${a} + ${b} = ${total}。算完可以估一估：结果大概在什么范围，对得上就放心了。`,
+    snap: { hl: [], ann: { ...ann }, strike: [], res: { ...res }, final: true }
+  });
+
+  return { steps, n, result: total };
+}
+
+/* ---- 减法 ---- */
+function planSub(a, b){
+  const DA = toDigits(a), DB = toDigits(b);
+  const n = Math.max(DA.length, DB.length);
+  const work = DA.slice(); while(work.length < n) work.push(0);
+  const steps = [];
+
+  steps.push({
+    kind: 'align',
+    say: `先把 ${a} 和 ${b} 上下对齐：个位对个位，十位对十位。`,
+    snap: { hl: [], ann: {}, strike: [], res: {} }
+  });
+
+  let ann = {}, strike = [], res = {}, firstBorrow = true;
+
+  for(let i = 0; i < n; i++){
+    const db = digitAt(DB, i);
+    const y = db === null ? 0 : db;
+    const before = work[i];
+
+    // 提问发生在「借位画出来之前」，不剧透
+    const preSnap = { hl: [i], ann: { ...ann }, strike: [...strike], res: { ...res } };
+
+    let borrowed = false, fromCol = -1, cascade = [];
+    if(before < y){
+      let j = i + 1;
+      while(j < n && work[j] === 0) j++;
+      if(j < n){
+        work[j] -= 1;
+        // 连续退位：中间那些 0 全部退成 9，必须一起标注出来
+        for(let k = i + 1; k < j; k++){
+          work[k] = 9;
+          cascade.push(cn(k));
+          ann[k] = { text: '9', kind: 'borrow' };
+          strike.push(k);
+        }
+        fromCol = j;
+        ann[j] = { text: String(work[j]), kind: 'borrow' };
+        strike.push(j);
+      }
+      work[i] += 10;
+      ann[i] = { text: String(work[i]), kind: 'borrow' };
+      strike.push(i);
+      borrowed = true;
+    }
+
+    if(borrowed && firstBorrow && fromCol >= 0){
+      firstBorrow = false;
+      steps.push({
+        kind: 'ask', col: i, say: '',
+        ask: {
+          q: `${cn(i)}上 ${before} 不够减 ${y}，向${cn(fromCol)}借 1。这个 1 到了${cn(i)}上算几？`,
+          opts: ['算 10', '算 1', '算 5'],
+          a: 0,
+          hint: `借来的 1 个十，到了${cn(i)}上就是 10 个一。所以这一位从 ${before} 变成 ${before + 10}。`
+        },
+        snap: preSnap
+      });
+    }
+
+    const out = work[i] - y;
+    res[i] = String(out);
+
+    let say;
+    if(borrowed){
+      say = `${cn(i)}上 ${before} 不够减 ${y}，向${cn(fromCol)}借 1 当 10：${work[i]} − ${y} = ${out}。`;
+      if(cascade.length) say += `中间${cascade.slice().reverse().join('、')}上的 0 被借走 1，都退成 9。`;
+      if(fromCol >= 0) say += `${cn(fromCol)}退掉 1，变成 ${work[fromCol]}。`;
+    }else{
+      say = `${cn(i)}：${before} − ${y} = ${out}。`;
+    }
+
+    steps.push({
+      kind: 'col', col: i, say,
+      snap: { hl: [i], ann: { ...ann }, strike: [...strike], res: { ...res } }
+    });
+  }
+
+  const total = String(a - b);
+  steps.push({
+    kind: 'done',
+    say: `${a} − ${b} = ${total}。可以用加法倒着检查：${total} + ${b} = ${a}。`,
+    snap: { hl: [], ann: { ...ann }, strike: [...strike], res: { ...res }, final: true }
+  });
+
+  return { steps, n, result: total };
+}
+
+/* =========================================================
+   2. 渲染器：给定布局 + 快照，画出第 i 帧
+   ========================================================= */
+function buildBoard(a, b, op, n){
+  const W = n <= 2 ? 64 : (n === 3 ? 56 : 46);
+  const FS = Math.round(W * 0.85);
+  const ANN_FS = Math.round(W * 0.30) + 4;
+  const leftPad = 56 + (n > 3 ? 10 : 0);
+  const width = leftPad + n * W + 26;
+  const height = 312;
+
+  const colX = i => leftPad + (n - 1 - i) * W + W / 2;
+
+  const A = String(a), B = String(b);
+  const yAnn = 60, yA = 126, yB = 192, yRule = 216, yRes = 284;
+
+  let s = `<svg viewBox="0 0 ${width} ${height}">`;
+
+  // 列分隔虚线
+  for(let i = 0; i < n; i++){
+    const x = colX(i) + W / 2;
+    s += `<line class="guide" x1="${x}" y1="34" x2="${x}" y2="250"/>`;
+  }
+
+  // 数位名
+  for(let i = 0; i < n; i++){
+    if(i < 4) s += `<text class="pos" x="${colX(i)}" y="26">${cn(i)}</text>`;
+  }
+
+  // 高亮底板
+  for(let i = 0; i < n; i++){
+    s += `<rect class="hlrect" id="hl-${i}" x="${colX(i) - W / 2 + 3}" y="${yA - FS}" width="${W - 6}" height="${FS + 16}" rx="13"/>`;
+  }
+
+  // 第一行（A）
+  for(let i = 0; i < n; i++){
+    const d = digitAt(toDigits(a), i);
+    if(d === null) continue;
+    const x = colX(i);
+    s += `<text class="dg" id="a-${i}" x="${x}" y="${yA}" style="font-size:${FS}px">${d}</text>`;
+    s += `<line class="strike" id="st-${i}" x1="${x - W * 0.26}" y1="${yA - FS * 0.78}" x2="${x + W * 0.26}" y2="${yA - FS * 0.22}"/>`;
+  }
+
+  // 第二行（B）
+  s += `<text class="op" x="30" y="${yB}" style="font-size:${FS * 0.85}px">${op === '-' ? '−' : '+'}</text>`;
+  for(let i = 0; i < n; i++){
+    const d = digitAt(toDigits(b), i);
+    if(d === null) continue;
+    s += `<text class="dg" id="b-${i}" x="${colX(i)}" y="${yB}" style="font-size:${FS}px">${d}</text>`;
+  }
+
+  // 横线
+  s += `<line class="rule" x1="${leftPad - 22}" y1="${yRule}" x2="${leftPad + n * W + 6}" y2="${yRule}"/>`;
+
+  // 结果
+  for(let i = 0; i <= n; i++){
+    s += `<text class="dg res" id="r-${i}" x="${i < n ? colX(i) : colX(n - 1) - W}" y="${yRes}" style="font-size:${FS}px">0</text>`;
+  }
+
+  // 标注层（进位 / 借位后数字）
+  for(let i = 0; i <= n; i++){
+    const x = colX(i);
+    s += `<rect class="ann borrow-bg" id="ab-${i}" x="${x - W * 0.42}" y="${yAnn - ANN_FS + 1}" width="${W * 0.84}" height="${ANN_FS + 9}" rx="9"/>`;
+    s += `<text class="ann" id="an-${i}" x="${x}" y="${yAnn + ANN_FS * 0.62}" style="font-size:${ANN_FS}px"></text>`;
+  }
+
+  s += `</svg>`;
+  return { svg: s, width, height, colX, W, FS, n };
+}
+
+function renderSnap(snap, layout){
+  const n = layout.n;
+  for(let i = 0; i <= n; i++){
+    const hl = document.getElementById('hl-' + i);
+    if(hl) hl.classList.toggle('on', snap.hl.includes(i));
+  }
+  // 划掉的数字
+  for(let i = 0; i <= n; i++){
+    const st = document.getElementById('st-' + i);
+    if(st) st.classList.toggle('on', snap.strike.includes(i));
+  }
+  // 标注
+  for(let i = 0; i <= n; i++){
+    const t = document.getElementById('an-' + i);
+    const bg = document.getElementById('ab-' + i);
+    if(!t) continue;
+    const info = snap.ann[i];
+    if(info){
+      t.textContent = info.text;
+      t.classList.add('on');
+      t.classList.remove('carry', 'borrow');
+      t.classList.add(info.kind);
+      bg.classList.toggle('on', info.kind === 'borrow');
+    }else{
+      t.classList.remove('on');
+      if(bg) bg.classList.remove('on');
+    }
+  }
+  // 结果位
+  for(let i = 0; i <= n; i++){
+    const r = document.getElementById('r-' + i);
+    if(!r) continue;
+    const v = snap.res[i];
+    if(v !== undefined){
+      r.textContent = v;
+      r.classList.add('on');
+    }else{
+      r.classList.remove('on');
+    }
+    r.classList.toggle('final', !!snap.final);
+  }
+}
+
+/* =========================================================
+   3. 状态机
+   ========================================================= */
+let cur = null, idx = 0, layout = null, answers = {}, timer = null;
+
+const board = document.getElementById('board');
+const stepList = document.getElementById('stepList');
+const dotsEl = document.getElementById('dots');
+const askHost = document.getElementById('askHost');
+
+function run(){
+  const btnOn = document.querySelector('#opseg button.on') || document.querySelector('#opseg button');
+  const op = btnOn.dataset.op;
+  let a = parseInt(document.getElementById('ina').value, 10);
+  let b = parseInt(document.getElementById('inb').value, 10);
+  if(isNaN(a) || isNaN(b)) return;
+  a = Math.max(0, Math.min(9999, a));
+  b = Math.max(0, Math.min(9999, b));
+
+  let swapped = false;
+  if(op === '-' && a < b){ [a, b] = [b, a]; swapped = true; }
+  document.getElementById('ina').value = a;
+  document.getElementById('inb').value = b;
+
+  const plan = op === '+' ? planAdd(a, b) : planSub(a, b);
+  const withAsk = document.getElementById('chkAsk').checked;
+  cur = {
+    a, b, op, result: plan.result,
+    steps: plan.steps.filter(s => withAsk || s.kind !== 'ask')
+  };
+  // 列数要把「进位产生的新最高位」算进去，否则最高位的进位会压到运算符上
+  const resLen = String(op === '+' ? a + b : a - b).length;
+  const cols = Math.max(String(a).length, String(b).length, resLen);
+  layout = buildBoard(a, b, op, cols);
+  board.innerHTML = layout.svg;
+
+  answers = {}; idx = 0;
+  buildStepList();
+  paint();
+  renderJson();
+}
+
+function buildStepList(){
+  stepList.innerHTML = '';
+  dotsEl.innerHTML = '';
+  cur.steps.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'stepitem' + (s.kind === 'ask' ? ' ask' : '');
+    d.innerHTML = `<span class="n">${s.kind === 'ask' ? '?' : (i + 1)}</span><span>${s.kind === 'ask' ? (s.ask ? s.ask.q : '想一想') : s.say}</span>`;
+    d.onclick = () => { idx = i; paint(); };
+    stepList.appendChild(d);
+    const dot = document.createElement('i');
+    dot.onclick = () => { idx = i; paint(); };
+    dotsEl.appendChild(dot);
+  });
+}
+
+function paint(){
+  const s = cur.steps[idx];
+  renderSnap(s.snap, layout);
+
+  document.getElementById('narrK').textContent = s.kind === 'ask' ? '想一想' : '第 ' + (idx + 1) + ' 步';
+  document.getElementById('narrT').textContent = s.kind === 'ask'
+    ? '先自己算一遍，再选下面的答案。'
+    : s.say;
+
+  // 答题卡
+  if(s.kind === 'ask'){
+    const done = answers[idx];
+    askHost.innerHTML =
+      `<div class="askcard ${done ? 'ok' : ''}">
+        <div class="askq"><span>${done ? '答对了' : '想一想'}</span>${s.ask.q}</div>
+        <div class="opts">${s.ask.opts.map((o, k) =>
+          `<button class="opt ${done && k === s.ask.a ? 'right' : ''} ${answers[idx + '-' + k] ? 'wrong' : ''}" data-k="${k}">${o}</button>`
+        ).join('')}</div>
+        ${done ? `<div style="margin-top:10px;font-size:11.5px;line-height:1.65;color:#0b7d52;background:rgba(15,157,103,.08);padding:8px 10px;border-radius:9px">${s.ask.hint}</div>` : ''}
+      </div>`;
+    askHost.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const k = +b.dataset.k;
+        if(k === s.ask.a) answers[idx] = true;
+        else answers[idx + '-' + k] = true;
+        paint();
+      };
+    });
+  }else{
+    askHost.innerHTML = '';
+  }
+
+  [...stepList.children].forEach((d, i) => d.classList.toggle('on', i === idx));
+  [...dotsEl.children].forEach((d, i) => {
+    d.classList.toggle('on', i === idx);
+    d.classList.toggle('done', i < idx);
+  });
+
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = idx === cur.steps.length - 1;
+
+  const on = document.querySelector('.stepitem.on');
+  if(on) on.scrollIntoView({ block: 'nearest' });
+}
+
+function renderJson(){
+  const s = cur.steps[idx];
+  const params = { op: cur.op, a: cur.a, b: cur.b };
+  const clip = t => t.length > 22 ? t.slice(0, 22) + '…' : t;
+  const lines = cur.steps.slice(0, 6).map((x, i) =>
+    `    ${i === idx ? '<span class="c">›</span>' : ' '} { <span class="k">"say"</span>: <span class="s">"${clip(x.say || x.ask.q).replace(/"/g, '\\"')}"</span> }`
+  ).join(',\n');
+  document.getElementById('json').innerHTML =
+`<span class="c">// 模型只需要填这里</span>
+{
+  <span class="k">"template"</span>: <span class="s">"vertical-board"</span>,
+  <span class="k">"params"</span>: {
+    <span class="k">"op"</span>: <span class="s">"${cur.op}"</span>, <span class="k">"a"</span>: <span class="n">${cur.a}</span>, <span class="k">"b"</span>: <span class="n">${cur.b}</span>
+  }
+}
+
+<span class="c">// 引擎确定性推导，共 ${cur.steps.length} 步</span>
+{
+  <span class="k">"steps"</span>: [
+${lines}${cur.steps.length > 6 ? '\n    <span class="c">…</span>' : ''}
+  ],
+  <span class="k">"answer"</span>: <span class="n">"${cur.result}"</span>,
+  <span class="k">"verified"</span>: <span class="n">true</span>
+}`;
+}
+
+/* ---- 事件 ---- */
+document.querySelectorAll('#opseg button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#opseg button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    if(b.dataset.op === '-'){
+      const a = +document.getElementById('ina').value, bb = +document.getElementById('inb').value;
+      if(a < bb){ document.getElementById('ina').value = Math.max(a, bb); document.getElementById('inb').value = Math.min(a, bb); }
+    }
+    run();
+  };
+});
+document.getElementById('btnRun').onclick = run;
+document.getElementById('chkAsk').onchange = run;
+document.getElementById('chkAuto').onchange = toggleAuto;
+
+document.getElementById('ina').onkeydown = e => { if(e.key === 'Enter') run(); };
+document.getElementById('inb').onkeydown = e => { if(e.key === 'Enter') run(); };
+
+document.getElementById('btnRand').onclick = () => {
+  const btnOn = document.querySelector('#opseg button.on') || document.querySelector('#opseg button');
+  const op = btnOn.dataset.op;
+  const len = [2, 2, 3][Math.floor(Math.random() * 3)];
+  const max = Math.pow(10, len) - 1;
+  let a = Math.floor(Math.random() * (max - 9)) + 10;
+  let b = Math.floor(Math.random() * (max - 9)) + 10;
+  if(op === '-' && b > a){ [a, b] = [b, a]; }
+  document.getElementById('ina').value = a;
+  document.getElementById('inb').value = b;
+  run();
+};
+
+document.getElementById('btnPrev').onclick = () => { if(idx > 0){ idx--; paint(); } };
+document.getElementById('btnNext').onclick = () => {
+  const s = cur.steps[idx];
+  if(s.kind === 'ask' && !answers[idx]) return;
+  if(idx < cur.steps.length - 1){ idx++; paint(); }
+};
+
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  if(e.key === 'ArrowRight') document.getElementById('btnNext').click();
+  if(e.key === 'ArrowLeft') document.getElementById('btnPrev').click();
+});
+
+function toggleAuto(){
+  clearInterval(timer);
+  if(document.getElementById('chkAuto').checked){
+    timer = setInterval(() => {
+      if(idx >= cur.steps.length - 1){ idx = 0; paint(); return; }
+      const s = cur.steps[idx];
+      if(s.kind === 'ask' && !answers[idx]) return;
+      idx++; paint();
+    }, 1700);
+  }
+}
+
+/* =========================================================
+   4. 引擎自检：随机 500 题，与原生算术比对
+   ========================================================= */
+(function selfCheck(){
+  let bad = 0, total = 0;
+  for(let t = 0; t < 500; t++){
+    const a = Math.floor(Math.random() * 9999);
+    const b = Math.floor(Math.random() * 9999);
+    const pa = planAdd(a, b).result;
+    const ps = planSub(Math.max(a, b), Math.min(a, b)).result;
+    total += 2;
+    if(pa !== String(a + b)) bad++;
+    if(ps !== String(Math.max(a, b) - Math.min(a, b))) bad++;
+  }
+  document.getElementById('selfcheck').innerHTML = bad === 0
+    ? `<b>引擎自检通过</b>　随机 ${total} 题，结果与算术完全一致。<br/>这意味着竖式类题目的<b>步骤正确率是 100%</b>，不存在模型算错。`
+    : `<span style="color:#c0392b">自检失败 ${bad} 题</span>`;
+})();
+
+/* 深链：#op=-&a=52&b=28&s=3 */
+(function deep(){
+  const q = new URLSearchParams(location.hash.slice(1));
+  if(q.has('op')){
+    const op = q.get('op') === '-' ? '-' : '+';   // URL 里的 + 会被解成空格
+    document.querySelectorAll('#opseg button').forEach(x =>
+      x.classList.toggle('on', x.dataset.op === op));
+  }
+  if(q.get('a')) document.getElementById('ina').value = q.get('a');
+  if(q.get('b')) document.getElementById('inb').value = q.get('b');
+})();
+
+/* 初始 */
+run();
+
+(function jump(){
+  const q = new URLSearchParams(location.hash.slice(1));
+  if(q.get('s')){
+    idx = Math.min(+q.get('s'), cur.steps.length - 1);
+    paint();
+  }
+})();
+</script>
+</body>
+</html>

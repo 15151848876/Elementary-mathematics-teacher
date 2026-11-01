@@ -1,0 +1,176 @@
+<view class="page">
+  <view class="topbar">
+    <view class="brand">数学小步</view>
+    <view class="ver">v0.3</view>
+    <view class="count">{{solved}} 题已讲</view>
+  </view>
+
+  <block wx:if="{{screen === 'home'}}">
+    <view class="home-content">
+      <view class="greeting">晚上好</view>
+      <view class="headline">拍一题，讲一步</view>
+
+      <view class="hero">
+        <view class="hero-title">拍试卷 · 分步讲</view>
+        <view class="hero-sub">拍下来自动切题<br/>每一步都画出来，不走神</view>
+        <view class="hero-actions">
+          <button class="hero-btn" bindtap="takePhoto">拍照识别</button>
+          <button class="hero-btn" bindtap="useDemo">看示例题</button>
+        </view>
+      </view>
+
+      <view class="section-head"><text>最近讲过</text><text class="muted">全部 ›</text></view>
+      <view class="recent-card" bindtap="useDemo">
+        <view class="recent-icon green">竖</view>
+        <view class="recent-copy"><view>两位数进位加法</view><text>昨天 · 6 步讲完</text></view>
+        <text class="chevron">›</text>
+      </view>
+      <view class="recent-card" bindtap="useDemo">
+        <view class="recent-icon orange">图</view>
+        <view class="recent-copy"><view>多几少几应用题</view><text>10 月 29 日 · 7 步讲完</text></view>
+        <text class="chevron">›</text>
+      </view>
+
+      <view class="demo-note">v0.3：已接入真实拍照。当前识别用的是本地示例（不联网），用来把「拍照 → 识别 → 分步动画」整条链路跑通。</view>
+    </view>
+  </block>
+
+  <block wx:if="{{screen === 'scan'}}">
+    <view class="scan-content">
+      <view class="scan-box">
+        <image wx:if="{{photo}}" class="shot" src="{{photo}}" mode="aspectFill"/>
+        <view wx:else class="paper">
+          <view class="paper-line short"></view>
+          <view class="paper-line long"></view>
+          <view class="paper-line medium"></view>
+          <view class="paper-equation">38 + 27 =<text>（第 3 题）</text></view>
+          <view class="paper-line long"></view>
+          <view class="paper-question">小明有 12 颗糖，小红比小明多 5 颗。</view>
+        </view>
+        <view class="scan-line"></view>
+        <view class="corner tl"></view><view class="corner tr"></view>
+        <view class="corner bl"></view><view class="corner br"></view>
+      </view>
+      <view class="scan-title">{{scanTitle}}<text>请保持画面稳定</text></view>
+      <view class="scan-tasks">
+        <view wx:for="{{scanTasks}}" wx:key="label" class="scan-task {{item.state}}">
+          <view class="task-dot">{{item.state === 'done' ? '✓' : ''}}</view><text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:if="{{screen === 'results'}}">
+    <view class="results-content">
+      <view wx:if="{{errMsg}}" class="errbox">
+        <view class="errtext">{{errMsg}}</view>
+        <view class="erractions">
+          <button class="control-btn" bindtap="goHome">回首页</button>
+          <button class="control-btn primary" bindtap="retry">重新拍一张</button>
+        </view>
+      </view>
+
+      <block wx:if="{{questions.length}}">
+        <view class="result-head">
+          <view>找到 {{questions.length}} 道题</view>
+          <text>{{source === 'mock' ? '本地示例识别' : '模型识别'}}</text>
+        </view>
+
+        <image wx:if="{{photo}}" class="thumb" src="{{photo}}" mode="aspectFill"/>
+
+        <view wx:for="{{questions}}" wx:key="id" class="question-card" data-index="{{index}}" bindtap="openQuestion">
+          <view class="question-no">第 {{item.no}} 题 · {{item.templateName}}</view>
+          <view class="question-stem">{{item.stem}}</view>
+          <view class="tags"><text class="tag blue">{{item.tag}}</text><text class="tag">{{item.topic}}</text><text class="tag confidence">{{item.confidence}}%</text></view>
+          <text class="question-arrow">›</text>
+        </view>
+
+        <view class="save-note">每道题的步骤都是引擎现算的，不是提前写死的</view>
+      </block>
+    </view>
+  </block>
+
+  <block wx:if="{{screen === 'solve'}}">
+    <view class="solve-top">
+      <view class="back" bindtap="backToResults">←</view>
+      <view class="solve-meta"><view>{{current.tag}}</view><text>{{current.topic}} · {{current.templateName}}</text></view>
+      <view class="step-count"><text>{{stepIndex + 1}}</text>/{{current.steps.length}}</view>
+    </view>
+    <view class="solve-content">
+      <view class="problem-stem">{{current.stem}}</view>
+
+      <view class="canvas-card">
+        <block wx:if="{{snap.kind === 'vertical'}}">
+          <view class="vboard">
+            <view class="vline">
+              <text class="vopc"></text>
+              <text class="vc vlbl" wx:for="{{snap.colLabels}}" wx:key="*this">{{item}}</text>
+            </view>
+            <view class="vline">
+              <text class="vopc"></text>
+              <text class="vc {{item.cls}}" wx:for="{{snap.aCells}}" wx:key="i">{{item.ch}}</text>
+            </view>
+            <view class="vline">
+              <text class="vopc op">{{snap.op}}</text>
+              <text class="vc {{item.cls}}" wx:for="{{snap.bCells}}" wx:key="i">{{item.ch}}</text>
+            </view>
+            <view class="vline vcarry">
+              <text class="vopc"></text>
+              <text class="vc {{item.cls}}" wx:for="{{snap.carryCells}}" wx:key="i">{{item.ch}}</text>
+            </view>
+            <view class="vrule"></view>
+            <view class="vline vres">
+              <text class="vopc"></text>
+              <text class="vc {{item.cls}}" wx:for="{{snap.resCells}}" wx:key="i">{{item.ch}}</text>
+            </view>
+          </view>
+        </block>
+
+        <block wx:elif="{{snap.kind === 'bar'}}">
+          <view class="bwrap">
+            <view class="brow" wx:for="{{snap.rows}}" wx:key="i">
+              <text class="blbl">{{item.label}}</text>
+              <view class="btrack">
+                <view class="bseg {{seg.cls}}" wx:for="{{item.segs}}" wx:for-item="seg" wx:key="i" style="width:{{seg.pct}}%">{{seg.text}}</view>
+              </view>
+              <text class="bval">{{item.value}}</text>
+            </view>
+            <view class="braces" wx:if="{{snap.braces.length}}">
+              <view class="brace2" wx:for="{{snap.braces}}" wx:key="i" style="margin-left:{{item.leftPct}}%;width:{{item.widthPct}}%">{{item.text}}</view>
+            </view>
+            <view class="beq" wx:if="{{snap.eq}}">{{snap.eq}}</view>
+          </view>
+        </block>
+
+        <block wx:elif="{{snap.kind === 'area'}}">
+          <view class="awrap">
+            <view class="agrid">
+              <view class="acell {{item.cls}}" wx:for="{{snap.cells}}" wx:key="i" style="width:{{snap.cellW}}%"></view>
+            </view>
+            <view class="aeq" wx:if="{{snap.eq}}">{{snap.eq}}</view>
+          </view>
+        </block>
+      </view>
+
+      <view class="narration">
+        <view class="narr-step">{{isAsk ? '想一想' : '第 ' + (stepIndex + 1) + ' 步'}}</view>
+        <view class="narr-title">{{stepTitle}}</view>
+        <view class="narr-text">{{stepText}}</view>
+      </view>
+
+      <view wx:if="{{isAsk}}" class="ask-card {{answered ? 'answered' : ''}}">
+        <view class="ask-title"><text>{{answered ? '答对了' : '想一想'}}</text>{{ask.question}}</view>
+        <view class="ask-options"><button wx:for="{{ask.options}}" wx:key="*this" data-index="{{index}}" class="ask-option {{answered && index === ask.answer ? 'correct' : ''}} {{wrongIndex === index ? 'wrong' : ''}}" bindtap="answerQuestion">{{item}}</button></view>
+        <view wx:if="{{answered}}" class="ask-hint">{{ask.hint}}</view>
+      </view>
+
+      <view class="controls">
+        <button class="control-btn" disabled="{{stepIndex === 0}}" bindtap="prevStep">上一步</button>
+        <view class="step-dots">
+          <view wx:for="{{current.steps}}" wx:key="idx" class="dot {{index === stepIndex ? 'on' : ''}} {{index < stepIndex ? 'done' : ''}}"></view>
+        </view>
+        <button class="control-btn primary" disabled="{{isAsk && !answered}}" bindtap="nextStep">{{stepIndex === current.steps.length - 1 ? '完成' : '下一步'}}</button>
+      </view>
+    </view>
+  </block>
+</view>

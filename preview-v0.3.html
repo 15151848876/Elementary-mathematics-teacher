@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v0.3 参数化渲染预览</title>
+<style>
+  :root{
+    --ink:#1a2233; --sub:#6b7488; --line:#e2e7f0; --blue:#3b6cff;
+    --green:#0b7d52; --orange:#c2560e; --red:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#eef1f7;color:var(--ink);
+    font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+    padding:32px 20px 56px}
+  h1{font-size:22px;margin:0 auto 4px;max-width:960px;font-weight:650}
+  .lede{max-width:960px;margin:0 auto 26px;color:var(--sub);font-size:13px}
+  .stage{max-width:960px;margin:0 auto;display:grid;grid-template-columns:390px 1fr;gap:28px;align-items:start}
+  @media (max-width:820px){ .stage{grid-template-columns:1fr} }
+
+  .phone{width:390px;height:844px;background:#fff;border-radius:34px;overflow:hidden;
+    box-shadow:0 30px 70px -34px rgba(20,35,70,.55);position:relative;display:flex;flex-direction:column}
+  .topbar{height:46px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .brand{font-size:16px;font-weight:650}
+  .ver{margin-left:6px;padding:2px 6px;border-radius:4px;background:#eafaf3;color:var(--green);
+    font-size:10px;font-weight:700}
+  .count{margin-left:auto;font-size:11px;color:var(--sub)}
+
+  .solve-top{height:50px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .back{width:31px;height:31px;border-radius:9px;background:#f0f3f9;display:grid;place-items:center;font-size:17px;color:#3c465c}
+  .solve-meta{margin-left:9px}
+  .solve-meta b{display:block;font-size:13px;font-weight:650}
+  .solve-meta span{font-size:10px;color:var(--sub)}
+  .step-count{margin-left:auto;font-size:11px;color:var(--sub)}
+  .step-count b{color:var(--blue);font-size:15px}
+
+  .scroll{flex:1;overflow:auto;padding:10px 12px 18px}
+  .stem{padding:0 5px 8px;border-left:3px solid var(--blue);font-size:13px;color:#3c465c;line-height:1.5}
+
+  .canvas{margin-top:6px;padding:15px 11px;min-height:200px;background:#fff;
+    border:1px solid var(--line);border-radius:13px;
+    background-image:radial-gradient(circle,#e9eefa 0.5px,transparent 0.5px);background-size:12px 12px;
+    display:flex;flex-direction:column;justify-content:center}
+
+  /* 竖式板 */
+  .vboard{width:100%}
+  .vline{display:flex;justify-content:center;align-items:flex-end;line-height:1.06}
+  .vopc{width:34px;text-align:center;font-size:23px;color:#9aa3b8;flex:0 0 auto}
+  .vopc.op{font-size:25px}
+  .vc{width:32px;text-align:center;font-size:29px;font-weight:600;color:var(--ink);
+    flex:0 0 auto;font-variant-numeric:tabular-nums}
+  .vc.wide{font-size:22px}
+  .vc.vlbl{font-size:10px;font-weight:400;color:#a3acbf;line-height:2.4}
+  .vc.hl-a{color:var(--blue)}
+  .vc.brw{color:var(--orange)}
+  .vc.carry{font-size:12px;color:var(--orange);font-weight:700;line-height:1.2}
+  .vcarry .vc{height:19px}
+  .vrule{height:2px;background:#151a24;margin:3px 0 4px 34px}
+  .vres .vc{color:#2447c9}
+  .vres .vc.new{color:#0f9d67}
+
+  /* 线段图 */
+  .bwrap{width:100%}
+  .brow{display:flex;align-items:center;margin-bottom:9px}
+  .blbl{width:34px;font-size:11px;color:var(--sub);flex:0 0 auto}
+  .btrack{flex:1;display:flex;align-items:center;min-height:30px}
+  .bseg{height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:650;margin-right:2px;overflow:hidden}
+  .bseg.a{background:#d5e0ff;color:#25419e}
+  .bseg.b{background:#c9f0dd;color:var(--green)}
+  .bseg.d{background:#ffe9d6;color:var(--orange);border:1px dashed #ff9a52}
+  .bval{width:50px;text-align:right;font-size:11px;font-weight:700;color:var(--green);flex:0 0 auto}
+  .braces{margin:1px 50px 0 34px}
+  .brace2{border-bottom:1px solid #9aa3b8;padding-bottom:5px;margin-bottom:7px;
+    text-align:center;font-size:10px;color:var(--sub)}
+  .beq{text-align:center;font-size:13px;font-weight:650;color:var(--green);margin-top:5px}
+
+  /* 面积模型 */
+  .awrap{width:100%}
+  .agrid{display:flex;flex-wrap:wrap;border-radius:5px;overflow:hidden;background:#fff}
+  .acell{height:40px;border:1px solid #d7dfeb;background:#fff}
+  .acell.a{background:#c3d4ff;border-color:#8fa9ee}
+  .acell.b{background:#ffd7b5;border-color:#f0a86a}
+  .aeq{text-align:center;margin-top:10px;font-size:14px;font-weight:650;color:#2b3a5c}
+
+  .narr{margin-top:12px;padding:11px 12px;border-radius:11px;background:#f7f9fe;border:1px solid #e6ecf9}
+  .narr-step{font-size:10px;color:var(--blue);font-weight:700;letter-spacing:.5px}
+  .narr-title{font-size:15px;font-weight:650;margin:3px 0 3px}
+  .narr-text{font-size:11.5px;line-height:1.65;color:#48536b}
+
+  .ask{margin-top:10px;padding:12px;border-radius:11px;background:#fff8ef;border:1px solid #f5dcbe}
+  .ask-title{font-size:12px;font-weight:650;color:#8a4b0d;margin-bottom:8px}
+  .ask-title span{display:inline-block;padding:1px 6px;border-radius:4px;background:#ffd9b0;margin-right:6px;font-size:10px}
+  .ask-opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 10px;border-radius:8px;
+    border:1px solid #ecd3b3;background:#fff;font-size:12px;color:#5d4a33}
+  .ask-opt.ok{background:#eafaf3;border-color:#8fd4b3;color:var(--green);font-weight:650}
+  .ask-hint{margin-top:8px;font-size:11px;color:#8a4b0d;line-height:1.6}
+
+  .controls{display:flex;align-items:center;gap:8px;padding:10px 12px 16px;flex:0 0 auto;border-top:1px solid var(--line)}
+  .btn{flex:0 0 auto;padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:#f6f8fc;
+    font-size:11.5px;color:#3c465c;font-family:inherit}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:650}
+  .btn:disabled{opacity:.4}
+  .dots{flex:1;display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+  .dot{width:5px;height:5px;border-radius:50%;background:#d5dce9}
+  .dot.on{background:var(--blue);transform:scale(1.5)}
+  .dot.done{background:#9db4ff}
+
+  .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+  .tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px}
+  .tab{padding:6px 11px;border-radius:8px;border:1px solid var(--line);background:#f7f9fc;
+    font-size:11.5px;color:#48536b;cursor:pointer;font-family:inherit}
+  .tab.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:650}
+  .panel h2{font-size:14px;margin:0 0 4px;font-weight:650}
+  .panel p{font-size:12px;color:var(--sub);margin:0 0 14px;line-height:1.65}
+  .kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #eef1f7;font-size:12px}
+  .kv span:first-child{color:var(--sub)}
+  .kv b{font-weight:650}
+  .slider{width:100%;margin-top:14px}
+  pre{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:12px;
+    font-size:10.5px;line-height:1.6;overflow:auto;max-height:210px;margin:14px 0 0;color:#3c465c}
+</style>
+</head>
+<body>
+<h1>v0.3 参数化渲染预览</h1>
+<p class="lede">同一份引擎数据，按小程序的尺寸换算渲染。切换题目可以看到：任意数字、任意位数、连续退位、假分数都能自动推导。</p>
+
+<div class="stage">
+  <div class="phone">
+    <div class="topbar">
+      <div class="brand">数学小步</div><div class="ver">v0.3</div>
+      <div class="count">46 题已讲</div>
+    </div>
+    <div class="solve-top">
+      <div class="back">←</div>
+      <div class="solve-meta"><b id="mTag">竖式计算</b><span id="mSub">加法竖式 · 竖式板</span></div>
+      <div class="step-count"><b id="mStep">1</b>/<span id="mTotal">6</span></div>
+    </div>
+    <div class="scroll">
+      <div class="stem" id="stem"></div>
+      <div class="canvas" id="canvas"></div>
+      <div class="narr">
+        <div class="narr-step" id="nStep">第 1 步</div>
+        <div class="narr-title" id="nTitle"></div>
+        <div class="narr-text" id="nText"></div>
+      </div>
+      <div id="askHost"></div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="prev">上一步</button>
+      <div class="dots" id="dots"></div>
+      <button class="btn primary" id="next">下一步</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="tabs" id="tabs"></div>
+    <h2 id="caseName"></h2>
+    <p id="caseDesc"></p>
+    <div class="kv"><span>答案</span><b id="ans"></b></div>
+    <div class="kv"><span>步骤数</span><b id="steps"></b></div>
+    <div class="kv"><span>提问关卡</span><b id="asks"></b></div>
+    <div class="kv"><span>快照类型</span><b id="kind"></b></div>
+    <input type="range" min="0" max="1" value="0" class="slider" id="slider">
+    <pre id="json"></pre>
+  </div>
+</div>
+
+<script>window.module = { exports: {} };</script>
+<script src="miniprogram-demo/utils/planners.js"></script>
+<script>
+var P = window.module.exports;
+
+var CASES = [
+  { key: 'add2', name: '38 + 27', desc: '两位数进位加法。个位满十，向十位进 1。',
+    stem: '38 + 27 = ?', mk: function () { return P.planAdd(38, 27); } },
+  { key: 'add3', name: '905 + 108', desc: '三位数相加且最高位进位：结果 1013 会自动多出一列。',
+    stem: '905 + 108 = ?', mk: function () { return P.planAdd(905, 108); } },
+  { key: 'sub', name: '52 − 28', desc: '退位减法。个位 2 不够减 8，向十位借 1 当 10。',
+    stem: '52 − 28 = ?', mk: function () { return P.planSub(52, 28); } },
+  { key: 'cascade', name: '1000 − 1', desc: '连续退位：千位、百位、十位、个位的数字依次变成 0、9、9、10。',
+    stem: '1000 − 1 = ?', mk: function () { return P.planSub(1000, 1); } },
+  { key: 'bar', name: '多 5 颗', desc: '多几少几：第二条线段 = 第一条 + 差段，最后合并求总数。',
+    stem: '小明有 12 颗糖，小红比小明多 5 颗。两人一共有多少颗糖？',
+    mk: function () { return P.planBarMore(12, 5, '颗'); } },
+  { key: 'sumdiff', name: '和 29 差 5', desc: '和差问题：补上差段，变成两个大数，所以除以 2。',
+    stem: '两个数的和是 29，差是 5。这两个数各是多少？',
+    mk: function () { return P.planBarSumDiff(29, 5, '个'); } },
+  { key: 'frac', name: '1/2 + 1/3', desc: '异分母：切成最小公倍数 6 格，分别涂色再数格子。',
+    stem: '1/2 + 1/3 = ?', mk: function () { return P.planFracAdd(1, 2, 1, 3); } },
+  { key: 'improper', name: '8/9 + 1/8', desc: '假分数：结果 73/72 超过 1，网格自动铺成两行整块。',
+    stem: '8/9 + 1/8 = ?', mk: function () { return P.planFracAdd(8, 9, 1, 8); } }
+];
+
+var cur = null, idx = 0;
+
+function el(id) { return document.getElementById(id); }
+
+function render() {
+  var step = cur.steps[idx];
+  var snap = step.snap;
+
+  el('mStep').textContent = idx + 1;
+  el('mTotal').textContent = cur.steps.length;
+  el('stem').textContent = cur.stem;
+  el('nTitle').textContent = step.title;
+  el('nText').textContent = step.text;
+  el('nStep').textContent = step.ask ? '想一想' : ('第 ' + (idx + 1) + ' 步');
+
+  var host = el('canvas');
+  host.innerHTML = '';
+  if (snap.kind === 'vertical') host.appendChild(renderVertical(snap));
+  else if (snap.kind === 'bar') host.appendChild(renderBar(snap));
+  else host.appendChild(renderArea(snap));
+
+  var askHost = el('askHost');
+  askHost.innerHTML = '';
+  if (step.ask) {
+    var box = document.createElement('div');
+    box.className = 'ask';
+    var h = '<div class="ask-title"><span>想一想</span>' + step.ask.question + '</div>';
+    step.ask.options.forEach(function (o, i) {
+      h += '<button class="ask-opt' + (i === step.ask.answer ? ' ok' : '') + '">' + o + '</button>';
+    });
+    h += '<div class="ask-hint">提示：' + step.ask.hint + '</div>';
+    box.innerHTML = h;
+    askHost.appendChild(box);
+  }
+
+  var dots = el('dots');
+  dots.innerHTML = '';
+  cur.steps.forEach(function (s, i) {
+    var d = document.createElement('div');
+    d.className = 'dot' + (i === idx ? ' on' : (i < idx ? ' done' : ''));
+    dots.appendChild(d);
+  });
+
+  el('prev').disabled = idx === 0;
+  el('next').disabled = idx === cur.steps.length - 1;
+  el('slider').value = idx;
+  el('json').textContent = JSON.stringify(snap, null, 1).slice(0, 900);
+}
+
+function renderVertical(s) {
+  var wrap = document.createElement('div');
+  wrap.className = 'vboard';
+  function line(cells, op, cls) {
+    var row = document.createElement('div');
+    row.className = 'vline' + (cls ? ' ' + cls : '');
+    var opc = document.createElement('div');
+    opc.className = 'vopc' + (op ? ' op' : '');
+    opc.textContent = op || '';
+    row.appendChild(opc);
+    cells.forEach(function (c) {
+      var d = document.createElement('div');
+      d.className = 'vc' + (c.cls ? ' ' + c.cls : '');
+      d.textContent = c.ch;
+      row.appendChild(d);
+    });
+    return row;
+  }
+  wrap.appendChild(line(s.colLabels.map(function (t) { return { ch: t, cls: 'vlbl' }; })));
+  wrap.appendChild(line(s.aCells));
+  wrap.appendChild(line(s.bCells, s.op));
+  wrap.appendChild(line(s.carryCells, '', 'vcarry'));
+  var rule = document.createElement('div');
+  rule.className = 'vrule';
+  wrap.appendChild(rule);
+  wrap.appendChild(line(s.resCells, '', 'vres'));
+  return wrap;
+}
+
+function renderBar(s) {
+  var wrap = document.createElement('div');
+  wrap.className = 'bwrap';
+  s.rows.forEach(function (r) {
+    var row = document.createElement('div');
+    row.className = 'brow';
+    var l = document.createElement('div');
+    l.className = 'blbl';
+    l.textContent = r.label;
+    var track = document.createElement('div');
+    track.className = 'btrack';
+    r.segs.forEach(function (seg) {
+      var b = document.createElement('div');
+      b.className = 'bseg ' + seg.cls;
+      b.style.width = seg.pct + '%';
+      b.textContent = seg.text;
+      track.appendChild(b);
+    });
+    var v = document.createElement('div');
+    v.className = 'bval';
+    v.textContent = r.value;
+    row.appendChild(l); row.appendChild(track); row.appendChild(v);
+    wrap.appendChild(row);
+  });
+  if (s.braces.length) {
+    var bs = document.createElement('div');
+    bs.className = 'braces';
+    s.braces.forEach(function (b) {
+      var d = document.createElement('div');
+      d.className = 'brace2';
+      d.style.marginLeft = b.leftPct + '%';
+      d.style.width = b.widthPct + '%';
+      d.textContent = b.text;
+      bs.appendChild(d);
+    });
+    wrap.appendChild(bs);
+  }
+  if (s.eq) {
+    var eq = document.createElement('div');
+    eq.className = 'beq';
+    eq.textContent = s.eq;
+    wrap.appendChild(eq);
+  }
+  return wrap;
+}
+
+function renderArea(s) {
+  var wrap = document.createElement('div');
+  wrap.className = 'awrap';
+  var grid = document.createElement('div');
+  grid.className = 'agrid';
+  s.cells.forEach(function (c) {
+    var d = document.createElement('div');
+    d.className = 'acell' + (c.cls ? ' ' + c.cls : '');
+    d.style.width = s.cellW + '%';
+    grid.appendChild(d);
+  });
+  wrap.appendChild(grid);
+  if (s.eq) {
+    var eq = document.createElement('div');
+    eq.className = 'aeq';
+    eq.textContent = s.eq;
+    wrap.appendChild(eq);
+  }
+  return wrap;
+}
+
+function load(c) {
+  cur = c.mk();
+  cur.stem = c.stem;
+  cur.tag = c.tag || '';
+  idx = 0;
+  el('caseName').textContent = c.name;
+  el('caseDesc').textContent = c.desc;
+  el('ans').textContent = cur.answer;
+  el('steps').textContent = cur.steps.length + ' 步';
+  el('asks').textContent = cur.steps.filter(function (s) { return s.ask; }).length + ' 处';
+  el('kind').textContent = cur.steps[0].snap.kind;
+  el('mTag').textContent = ({ vertical: '竖式计算', bar: '应用题', area: '分数计算' })[cur.steps[0].snap.kind];
+  el('mSub').textContent = ({ vertical: '竖式板', bar: '线段图', area: '面积模型' })[cur.steps[0].snap.kind];
+  var sl = el('slider');
+  sl.max = cur.steps.length - 1;
+  sl.value = 0;
+  Array.prototype.forEach.call(el('tabs').children, function (t) {
+    t.className = 'tab' + (t.dataset.key === c.key ? ' on' : '');
+  });
+  render();
+}
+
+CASES.forEach(function (c) {
+  var b = document.createElement('button');
+  b.className = 'tab';
+  b.textContent = c.name;
+  b.dataset.key = c.key;
+  b.onclick = function () { load(c); };
+  el('tabs').appendChild(b);
+});
+
+el('prev').onclick = function () { if (idx > 0) { idx--; render(); } };
+el('next').onclick = function () { if (idx < cur.steps.length - 1) { idx++; render(); } };
+el('slider').oninput = function (e) { idx = Number(e.target.value); render(); };
+
+
+(function boot() {
+  var h = location.hash.replace('#', '');
+  var kv = {};
+  h.split('&').forEach(function (p) {
+    var i = p.indexOf('=');
+    if (i > 0) kv[p.slice(0, i)] = p.slice(i + 1);
+  });
+  var c = CASES.filter(function (x) { return x.key === kv.k; })[0] || CASES[0];
+  load(c);
+  if (kv.s) { idx = Math.min(Number(kv.s), cur.steps.length - 1); render(); }
+})();
+</script>
+</body>
+</html>
