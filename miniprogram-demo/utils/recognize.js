@@ -48,6 +48,11 @@ var SYSTEM_PROMPT = [
   '19. circle_peri_area —— 圆，已知半径求周长和面积。params: {"r":半径}',
   '20. parallelogram_area —— 平行四边形，已知底和高求面积。params: {"a":底,"h":高}',
   '21. trapezoid_area —— 梯形，已知上底、下底、高求面积。params: {"a":上底,"b":下底,"h":高}',
+  '【几何题判定规则，务必遵守】先仔细读题干，判断题目问的是「哪个量」，再决定 kind：',
+  '- 问「周长/绕一圈多长」→ 属于求周长，选带 peri 的 kind（square_peri_area 或 circle_peri_area）；',
+  '- 问「面积/多大/铺满」→ 属于求面积，选带 area 的 kind（triangle_area、parallelogram_area、trapezoid_area、composite_area、square_peri_area、circle_peri_area）；',
+  '- 问「边长/另一条边/半径」→ 属于求边长，选 rect_reverse（已知周长反求一边）或 square_peri_area（已知面积反求边长）；',
+  '- 严禁把「求边长」理解成「求周长」，严禁把「求周长」理解成「求面积」。题干里的「周长」「面积」「边长」三个词是判定的关键。',
   '要求：数字必须从图中如实识别，不得推测或修正；labels/values 长度一致；只输出 JSON，不要任何解释文字。'
 ].join('\n');
 

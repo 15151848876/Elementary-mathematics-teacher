@@ -202,65 +202,68 @@
 
         <block wx:elif="{{snap.kind === 'shape'}}">
           <view class="shwrap">
-            <view class="shsvg">
+            <view class="shbox">
               <!-- 正方形 -->
-              <svg wx:if="{{snap.shape === 'square'}}" viewBox="0 0 200 200" class="sh-svg">
-                <rect x="40" y="40" width="120" height="120" class="sh-fill {{snap.hl === 'area' ? 'on' : ''}}" rx="2" />
-                <rect x="40" y="40" width="120" height="120" fill="none" class="sh-stroke {{snap.hl === 'peri' ? 'on' : ''}}" stroke-width="3" />
-                <text x="100" y="180" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
-                <text x="100" y="105" text-anchor="middle" class="sh-dim dark">{{snap.a}}</text>
-              </svg>
+              <view wx:if="{{snap.shape === 'square'}}" class="sh-fig">
+                <view class="sq-shape {{snap.hl === 'peri' ? 'edge' : ''}} {{snap.hl === 'area' ? 'filled' : ''}}">
+                  <text class="sq-dim bottom">{{snap.a}}</text>
+                </view>
+              </view>
               <!-- 长方形 -->
-              <svg wx:elif="{{snap.shape === 'rect'}}" viewBox="0 0 240 160" class="sh-svg">
-                <rect x="30" y="40" width="180" height="80" fill="none" class="sh-stroke" stroke-width="3" />
-                <rect x="30" y="40" width="180" height="80" class="sh-fill {{snap.hl === 'area' || snap.hl === 'check' ? 'on' : ''}}" rx="2" />
-                <text x="120" y="145" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
-                <text x="10" y="85" text-anchor="middle" class="sh-dim">{{snap.b || '?'}}</text>
-              </svg>
+              <view wx:elif="{{snap.shape === 'rect'}}" class="sh-fig">
+                <view class="rect-shape {{snap.hl === 'check' || snap.hl === 'area' ? 'filled' : ''}}">
+                  <text class="rect-dim bottom">{{snap.a}}</text>
+                  <text class="rect-dim right">{{snap.b || '?'}}</text>
+                </view>
+              </view>
               <!-- 三角形 -->
-              <svg wx:elif="{{snap.shape === 'triangle'}}" viewBox="0 0 220 160" class="sh-svg">
-                <polygon points="30,130 190,130 190,50" class="sh-fill {{snap.hl === 'area' ? 'on' : ''}}" />
-                <polygon points="30,130 190,130 190,50" fill="none" class="sh-stroke" stroke-width="3" />
-                <line x1="190" y1="50" x2="190" y2="130" stroke-dasharray="4,3" class="sh-dash" stroke-width="2" />
-                <text x="110" y="152" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
-                <text x="205" y="92" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
-              </svg>
-              <!-- 组合图形（L形：两块矩形） -->
-              <svg wx:elif="{{snap.shape === 'composite'}}" viewBox="0 0 240 200" class="sh-svg">
-                <rect x="40" y="40" width="120" height="90" class="sh-fill {{snap.hl === 'p1' ? 'on' : (snap.hl === 'sum' ? 'on' : '')}}" />
-                <rect x="40" y="40" width="120" height="90" fill="none" class="sh-stroke" stroke-width="3" />
-                <rect x="40" y="130" width="70" height="50" class="sh-fill alt {{snap.hl === 'p2' ? 'on' : (snap.hl === 'sum' ? 'on' : '')}}" />
-                <rect x="40" y="130" width="70" height="50" fill="none" class="sh-stroke" stroke-width="3" />
-                <text x="100" y="30" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
-                <text x="25" y="90" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
-                <text x="75" y="198" text-anchor="middle" class="sh-dim">{{snap.c}}</text>
-                <text x="18" y="158" text-anchor="middle" class="sh-dim">{{snap.d}}</text>
-              </svg>
+              <view wx:elif="{{snap.shape === 'triangle'}}" class="sh-fig">
+                <view class="tri-wrap">
+                  <view class="tri-shape {{snap.hl === 'area' ? 'filled' : ''}}"></view>
+                  <text class="tri-dim bottom">{{snap.a}}</text>
+                  <text class="tri-dim right">{{snap.b}}</text>
+                </view>
+              </view>
               <!-- 圆 -->
-              <svg wx:elif="{{snap.shape === 'circle'}}" viewBox="0 0 200 200" class="sh-svg">
-                <circle cx="100" cy="100" r="70" class="sh-fill {{snap.hl === 'area' ? 'on' : ''}}" />
-                <circle cx="100" cy="100" r="70" fill="none" class="sh-stroke {{snap.hl === 'peri' ? 'on' : ''}}" stroke-width="3" />
-                <line x1="100" y1="100" x2="170" y2="100" class="sh-stroke" stroke-width="2" />
-                <circle cx="100" cy="100" r="3" fill="#3b4a70" />
-                <text x="132" y="92" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
-              </svg>
+              <view wx:elif="{{snap.shape === 'circle'}}" class="sh-fig">
+                <view class="circle-wrap">
+                  <view class="circle-shape {{snap.hl === 'peri' ? 'edge' : ''}} {{snap.hl === 'area' ? 'filled' : ''}}">
+                    <view class="radius-line"></view>
+                    <text class="circle-dim">{{snap.a}}</text>
+                  </view>
+                </view>
+              </view>
               <!-- 平行四边形 -->
-              <svg wx:elif="{{snap.shape === 'parallelogram'}}" viewBox="0 0 240 160" class="sh-svg">
-                <polygon points="50,130 170,130 210,50 90,50" class="sh-fill {{snap.hl === 'area' || snap.hl === 'cut' ? 'on' : ''}}" />
-                <polygon points="50,130 170,130 210,50 90,50" fill="none" class="sh-stroke" stroke-width="3" />
-                <line x1="170" y1="50" x2="170" y2="130" stroke-dasharray="4,3" class="sh-dash" stroke-width="2" />
-                <text x="130" y="152" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
-                <text x="185" y="92" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
-              </svg>
+              <view wx:elif="{{snap.shape === 'parallelogram'}}" class="sh-fig">
+                <view class="para-wrap">
+                  <view class="para-shape {{snap.hl === 'area' || snap.hl === 'cut' ? 'filled' : ''}}"></view>
+                  <view class="para-h"></view>
+                  <text class="para-dim bottom">{{snap.a}}</text>
+                  <text class="para-dim right">{{snap.b}}</text>
+                </view>
+              </view>
               <!-- 梯形 -->
-              <svg wx:elif="{{snap.shape === 'trapezoid'}}" viewBox="0 0 240 160" class="sh-svg">
-                <polygon points="70,50 190,50 220,130 40,130" class="sh-fill {{snap.hl === 'area' ? 'on' : ''}}" />
-                <polygon points="70,50 190,50 220,130 40,130" fill="none" class="sh-stroke" stroke-width="3" />
-                <line x1="130" y1="50" x2="130" y2="130" stroke-dasharray="4,3" class="sh-dash" stroke-width="2" />
-                <text x="130" y="40" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
-                <text x="130" y="152" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
-                <text x="143" y="92" text-anchor="middle" class="sh-dim">{{snap.c}}</text>
-              </svg>
+              <view wx:elif="{{snap.shape === 'trapezoid'}}" class="sh-fig">
+                <view class="trap-wrap">
+                  <view class="trap-shape {{snap.hl === 'area' ? 'filled' : ''}}"></view>
+                  <text class="trap-dim top">{{snap.a}}</text>
+                  <text class="trap-dim bottom">{{snap.b}}</text>
+                  <text class="trap-dim right">{{snap.c}}</text>
+                </view>
+              </view>
+              <!-- 组合图形（L形：两块矩形） -->
+              <view wx:elif="{{snap.shape === 'composite'}}" class="sh-fig">
+                <view class="comp-wrap">
+                  <view class="comp-p1 {{snap.hl === 'p1' || snap.hl === 'sum' ? 'filled' : ''}}">
+                    <text class="comp-dim top">{{snap.a}}</text>
+                    <text class="comp-dim left">{{snap.b}}</text>
+                  </view>
+                  <view class="comp-p2 {{snap.hl === 'p2' || snap.hl === 'sum' ? 'filled alt' : ''}}">
+                    <text class="comp-dim top">{{snap.c}}</text>
+                    <text class="comp-dim left">{{snap.d}}</text>
+                  </view>
+                </view>
+              </view>
             </view>
             <view class="sheq" wx:if="{{snap.eq}}">{{snap.eq}}</view>
           </view>
