@@ -17,6 +17,17 @@ function qVerticalAdd() {
   return { no: 1, stem: a + ' + ' + b + ' = ?', kind: 'vertical_add', params: { a: a, b: b }, confidence: rnd(93, 99) };
 }
 
+/* 竖式减法（保证至少一次退位） */
+function qVerticalSub() {
+  var a = rnd(21, 99);
+  var b = rnd(11, 89);
+  if (a <= b) { var t = a; a = b; b = t; }
+  if ((a % 10) >= (b % 10)) b = (b - (b % 10)) + ((a % 10) + rnd(1, 4)) % 10 + 1;
+  if (b >= a) b = a - 1 - rnd(0, 9);
+  if (b < 10) b = b + 10;
+  return { no: 1, stem: a + ' − ' + b + ' = ?', kind: 'vertical_sub', params: { a: a, b: b }, confidence: rnd(93, 99) };
+}
+
 /* 多几少几 */
 function qBarMore() {
   var m = rnd(8, 36);
@@ -80,16 +91,19 @@ function qChart() {
   return { no: 8, stem: '统计水果数量：苹果 ' + values[0] + ' 个，香蕉 ' + values[1] + ' 个，橘子 ' + values[2] + ' 个。', kind: 'chart_bar', params: { labels: labels, values: values }, confidence: rnd(90, 97) };
 }
 
-/* 轮换：每次从八类里挑 3 题（保证新原语能随机出现） */
+/* 轮换：竖式必出（第 1 题固定），另从剩余七类里随机抽 2 题（保证新原语能随机出现，且竖式稳定可见） */
 function mockQuestions() {
-  var all = [qVerticalAdd, qBarMore, qFracAdd, qNumberLine, qCounter, qGeoBoard, qBalance, qChart];
-  // 洗牌，取前 3
-  var idx = [0, 1, 2, 3, 4, 5, 6, 7];
+  // 第 1 题固定竖式（加法或减法交替，覆盖两种竖式）
+  var first = Math.random() < 0.5 ? qVerticalAdd() : qVerticalSub();
+  // 其余 7 类洗牌取 2
+  var rest = [qBarMore, qFracAdd, qNumberLine, qCounter, qGeoBoard, qBalance, qChart];
+  var idx = [0, 1, 2, 3, 4, 5, 6];
   for (var i = idx.length - 1; i > 0; i--) {
     var j = rnd(0, i);
     var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
   }
-  return idx.slice(0, 3).map(function (k) { return all[k](); });
+  var picked = [first].concat(idx.slice(0, 2).map(function (k) { return rest[k](); }));
+  return picked;
 }
 
 module.exports = mockQuestions;
