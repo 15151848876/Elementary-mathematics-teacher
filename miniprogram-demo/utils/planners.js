@@ -766,9 +766,12 @@ function planCounter(a, b) {
 
 /* ============================ 几何板：数格子算面积/周长 ============================ */
 
-function planGeoBoard(r, c) {
+function planGeoBoard(r, c, want) {
   var area = r * c;
   var peri = 2 * (r + c);
+  // want: 'peri' 只求周长 / 'area' 只求面积 / 其它(=both) 都求
+  var onlyPeri = want === 'peri';
+  var onlyArea = want === 'area';
   var steps = [];
 
   function cells(hlRow, hlCol, hlAll) {
@@ -790,66 +793,86 @@ function planGeoBoard(r, c) {
     snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, false), hl: null, eq: '' }
   });
 
-  steps.push({
-    title: '先数一周有多少格（周长）',
-    text: '沿着边数：上面 ' + c + ' 格，下面 ' + c + ' 格，左边 ' + r + ' 格，右边 ' + r + ' 格。',
-    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(0, 0, false), hl: 'edge', eq: '' }
-  });
+  if (!onlyArea) {
+    steps.push({
+      title: '先数一周有多少格（周长）',
+      text: '沿着边数：上面 ' + c + ' 格，下面 ' + c + ' 格，左边 ' + r + ' 格，右边 ' + r + ' 格。',
+      snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(0, 0, false), hl: 'edge', eq: '' }
+    });
+    steps.push({
+      title: '算周长',
+      text: '周长 =（' + c + ' + ' + r + '）× 2 = ' + peri + '。数的是“围一圈”的格子数。',
+      snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'edge', eq: '周长 = (' + c + ' + ' + r + ') × 2 = ' + peri }
+    });
+  }
 
-  steps.push({
-    title: '算周长',
-    text: '周长 =（' + c + ' + ' + r + '）× 2 = ' + peri + '。数的是“围一圈”的格子数。',
-    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'edge', eq: '周长 = (' + c + ' + ' + r + ') × 2 = ' + peri }
-  });
+  if (!onlyPeri) {
+    steps.push({
+      title: '再数一共铺了几格（面积）',
+      text: '面积是“铺满”一共用了几个格子。数一数：' + r + ' 行，每行 ' + c + ' 格。',
+      snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'area', eq: '' }
+    });
+    steps.push({
+      title: '算面积',
+      text: '面积 = ' + r + ' × ' + c + ' = ' + area + '。周长是“围一圈”，面积是“铺满”，别弄混。',
+      snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'area', eq: '面积 = ' + r + ' × ' + c + ' = ' + area }
+    });
+  }
 
-  steps.push({
-    title: '再数一共铺了几格（面积）',
-    text: '面积是“铺满”一共用了几个格子。数一数：' + r + ' 行，每行 ' + c + ' 格。',
-    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'area', eq: '' }
-  });
-
-  steps.push({
-    title: '算面积',
-    text: '面积 = ' + r + ' × ' + c + ' = ' + area + '。周长是“围一圈”，面积是“铺满”，别弄混。',
-    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'area', eq: '面积 = ' + r + ' × ' + c + ' = ' + area }
-  });
-
-  return { kind: 'geoboard', answer: '周长 ' + peri + '，面积 ' + area, steps: steps };
+  var answer;
+  if (onlyPeri) answer = '周长 ' + peri;
+  else if (onlyArea) answer = '面积 ' + area;
+  else answer = '周长 ' + peri + '，面积 ' + area;
+  return { kind: 'geoboard', answer: answer, steps: steps };
 }
 
 /* ============================ 几何：正方形 ============================ */
 
-function planSquare(s) {
+function planSquare(s, want) {
   var area = s * s;
   var peri = 4 * s;
+  // want: 'peri' 只求周长 / 'area' 只求面积 / 其它(=both) 周长面积都求
+  var onlyPeri = want === 'peri';
+  var onlyArea = want === 'area';
   var steps = [];
   steps.push({
     title: '画一个正方形',
     text: '正方形四条边一样长，都是 ' + s + '。',
     snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: null, eq: '' }
   });
-  steps.push({
-    title: '算周长',
-    text: '周长 = 边长 × 4 = ' + s + ' × 4 = ' + peri + '。',
-    snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'peri', eq: '周长 = ' + s + ' × 4 = ' + peri }
-  });
-  steps.push({
-    title: '想一想面积',
-    text: '面积是“铺满”的大小。先自己想一想：' + s + ' × ' + s + ' 等于几？',
-    ask: {
-      question: s + ' × ' + s + ' = ?',
-      options: [String(area), String(s * 4), String(s + s)],
-      answer: 0,
-      hint: '面积 = 边长 × 边长 = ' + s + ' × ' + s + ' = ' + area + '。'
-    },
-    snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'area', eq: '面积 = ' + s + ' × ' + s + ' = ?' }
-  });
-  steps.push({
-    title: '答案是 ' + area,
-    text: '面积 = 边长 × 边长 = ' + s + ' × ' + s + ' = ' + area + '。',
-    snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'area', eq: '面积 = ' + s + ' × ' + s + ' = ' + area }
-  });
-  return { kind: 'shape', answer: '周长 ' + peri + '，面积 ' + area, steps: steps };
+
+  if (!onlyArea) {
+    steps.push({
+      title: '算周长',
+      text: '周长 = 边长 × 4 = ' + s + ' × 4 = ' + peri + '。',
+      snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'peri', eq: '周长 = ' + s + ' × 4 = ' + peri }
+    });
+  }
+
+  if (!onlyPeri) {
+    steps.push({
+      title: '想一想面积',
+      text: '面积是“铺满”的大小。先自己想一想：' + s + ' × ' + s + ' 等于几？',
+      ask: {
+        question: s + ' × ' + s + ' = ?',
+        options: [String(area), String(s * 4), String(s + s)],
+        answer: 0,
+        hint: '面积 = 边长 × 边长 = ' + s + ' × ' + s + ' = ' + area + '。'
+      },
+      snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'area', eq: '面积 = ' + s + ' × ' + s + ' = ?' }
+    });
+    steps.push({
+      title: '答案是 ' + area,
+      text: '面积 = 边长 × 边长 = ' + s + ' × ' + s + ' = ' + area + '。',
+      snap: { kind: 'shape', shape: 'square', a: s, b: null, hl: 'area', eq: '面积 = ' + s + ' × ' + s + ' = ' + area }
+    });
+  }
+
+  var answer;
+  if (onlyPeri) answer = '周长 ' + peri;
+  else if (onlyArea) answer = '面积 ' + area;
+  else answer = '周长 ' + peri + '，面积 ' + area;
+  return { kind: 'shape', answer: answer, steps: steps };
 }
 
 /* ============================ 几何：已知周长反求边长/一边 ============================ */
@@ -1262,10 +1285,10 @@ function build(q) {
     plan = planCounter(p.a, p.b);
     topic = '小棒计数器进位加法';
   } else if (q.kind === 'geoboard_rect') {
-    plan = planGeoBoard(p.r, p.c);
+    plan = planGeoBoard(p.r, p.c, p.want);
     topic = '周长与面积';
   } else if (q.kind === 'square_peri_area') {
-    plan = planSquare(p.s);
+    plan = planSquare(p.s, p.want);
     topic = '正方形周长面积';
   } else if (q.kind === 'rect_reverse') {
     if (!(p.known > 0)) return null; // 缺已知边，讲不了（不硬讲，避免 null 出现在界面上）
