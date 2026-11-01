@@ -111,6 +111,6 @@
 .shot{position:absolute;left:0;top:0;width:100%;height:100%}
 .thumb{width:100%;height:190rpx;border-radius:18rpx;margin-bottom:18rpx;background:#e9eef7}
 .errbox{padding:34rpx 28rpx;border-radius:22rpx;background:#fff8ef;border:1rpx solid #f3d9bd}
-.errtext{font-size:25rpx;line-height:1.7;color:#8a4b0d}
+.errtext{font-size:25rpx;line-height:1.7;color:#8a4b0d;white-space:pre-line;word-break:break-all}
 .erractions{display:flex;gap:16rpx;margin-top:24rpx}
 .erractions .control-btn{flex:1;margin:0}

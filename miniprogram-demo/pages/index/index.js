@@ -89,10 +89,21 @@ Page({
       that.busy = false;
 
       if (!rec.ok) {
+        var msg = '识别没成功：' + ((rec.err && rec.err.message) || '请重拍一张试试');
+        // 附上诊断助手捕获的云请求失败详情，便于定位（真机 vs 模拟器差异通常藏在这里）
+        var app = getApp();
+        var cloudErrs = (app && app.globalData && app.globalData._cloudErrors) || [];
+        var last = cloudErrs[cloudErrs.length - 1];
+        if (last) {
+          msg += '\n\n[诊断] ' + last.stage + ' HTTP' + last.status;
+          if (last.code) msg += ' code=' + last.code;
+          if (last.requestId) msg += '\nrequestId=' + last.requestId;
+          if (last.message) msg += '\n' + last.message;
+        }
         that.setData({
           screen: 'results',
           questions: [],
-          errMsg: '识别没成功：' + ((rec.err && rec.err.message) || '请重拍一张试试'),
+          errMsg: msg,
           source: ''
         });
         return;

@@ -34,7 +34,7 @@ function logFailure(options, startedAt, status, data, headers) {
         : {};
 
     // 只记录失败摘要，避免凭据、查询参数和完整响应体进入手机日志。
-    console.error('[WorkBuddy Cloud] request failed', JSON.stringify({
+    const summary = {
         stage: status === 0 ? 'network' : 'http',
         method: (options.method || 'GET').toUpperCase(),
         url,
@@ -45,7 +45,17 @@ function logFailure(options, startedAt, status, data, headers) {
         message: message || `HTTP ${status}`,
         requestId: responseHeader(headers, 'x-request-id'),
         traceId: responseHeader(headers, 'x-trace-id'),
-    }));
+    };
+    console.error('[WorkBuddy Cloud] request failed', JSON.stringify(summary));
+    // 同步写一份到 globalData，供页面直接展示失败详情（避免只能翻 vConsole）
+    try {
+        const app = typeof getApp === 'function' ? getApp() : null;
+        if (app && app.globalData) {
+            app.globalData._cloudErrors = app.globalData._cloudErrors || [];
+            app.globalData._cloudErrors.push(summary);
+            if (app.globalData._cloudErrors.length > 5) app.globalData._cloudErrors.shift();
+        }
+    } catch (e) { /* 忽略：诊断信息写入失败不影响主流程 */ }
 }
 
 function createDiagnosticWx(originalWx) {
