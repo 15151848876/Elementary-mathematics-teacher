@@ -193,9 +193,17 @@
 
         <block wx:elif="{{snap.kind === 'geoboard'}}">
           <view class="gbwrap">
-            <view class="gbgrid" style="grid-template-columns:repeat({{snap.cols}},1fr)">
+            <!-- 周长视角：长方形轮廓 + 四边标注，不画格子 -->
+            <view class="gboutline-wrap" wx:if="{{snap.perim}}">
+              <text class="gbdim top">{{snap.dimTop}}</text>
+              <view class="gbrow">
+                <text class="gbdim side">{{snap.dimSide}}</text>
+                <view class="gboutline {{snap.hl === 'edge' ? 'lit' : ''}}" style="width:{{snap.cols * 100 / (snap.cols + snap.rows)}}%;aspect-ratio:{{snap.cols}}/{{snap.rows}};"></view>
+              </view>
+            </view>
+            <!-- 面积视角：方格纸 -->
+            <view class="gbgrid" wx:else style="grid-template-columns:repeat({{snap.cols}},1fr)">
               <view class="gbcell {{item.cls}}" wx:for="{{snap.cells}}" wx:key="i"></view>
-              <!-- 周长：一圈彩色边框，示意"围一圈"；不画格子、不碰四角 -->
               <view class="gbperim" wx:if="{{snap.hl === 'edge'}}"></view>
             </view>
             <view class="gbeq" wx:if="{{snap.eq}}">{{snap.eq}}</view>
