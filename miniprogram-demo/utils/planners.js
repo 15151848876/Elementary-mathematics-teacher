@@ -976,9 +976,21 @@ function build(q) {
     plan = planDiv(p.a, p.b);
     topic = '除法竖式';
   } else if (q.kind === 'expression') {
-    // 泛化兜底：任意加减乘除/括号/分数/小数算式，走分步求值引擎
-    plan = require('./expression.js').planExpression(p.expr);
-    topic = '脱式计算';
+    // 泛化兜底：任意加减乘除/括号/分数/小数算式，走分步求值引擎。
+    // 简单两整数±×÷优先给竖式板（小学竖式教学的预期形态）
+    var exprStr = String(p.expr || '');
+    var simple = /^\s*(\d{1,4})\s*([+\-−×*xX÷/])\s*(\d{1,4})\s*$/.exec(exprStr);
+    if (simple) {
+      var sa = Number(simple[1]), sb = Number(simple[3]), sop = simple[2];
+      if (sop === '+') { plan = planAdd(sa, sb); topic = '加法竖式'; }
+      else if (sop === '-' || sop === '−') { if (sa >= sb) { plan = planSub(sa, sb); topic = '减法竖式'; } }
+      else if (sop === '×' || sop === '*' || sop === 'x' || sop === 'X') { plan = planMul(sa, sb); topic = '乘法竖式'; }
+      else if ((sop === '÷' || sop === '/') && sb !== 0 && sa % sb === 0) { plan = planDiv(sa, sb); topic = '除法竖式'; }
+    }
+    if (!plan) {
+      plan = require('./expression.js').planExpression(exprStr);
+      topic = '脱式计算';
+    }
   }
 
   if (!plan) return null;

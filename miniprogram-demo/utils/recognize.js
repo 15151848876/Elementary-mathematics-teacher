@@ -1,16 +1,20 @@
-/* 识别适配层 v0.4 —— 真实拍照识别
+/* 识别适配层 v0.6.1 —— 真实拍照识别（加固版）
  *
  * 小程序端只依赖这里的一个函数：recognize(filePath) -> Promise<{ source, questions }>
  * questions[i] = { no, stem, kind, params, confidence }
  *
+ * v0.6.1 加固（针对真机拍照识别失败的排查与兜底）：
+ *   1. 上传前先 wx.compressImage 压图——真实照片 3~8MB，base64 后超限会被网关/小程序拒绝
+ *   2. normalizeQuestions 更宽容——数字字符串强转、kind 别名归一、
+ *      expression 里「简单两整数±」自动转回竖式板（保证竖式题仍出竖式动画）
+ *   3. 失败自动重试一次；错误信息按原因细分，结果页会显示具体原因便于定位
+ *
  * 分工（v0.3 定下的架构不变）：
  *   云端多模态模型只做「识别」——看图、切题、判题型、抽数字；
  *   讲解步骤仍然由本地确定性引擎 planners.js 推导，模型不碰数学。
- *   所以步骤正确率不依赖模型，模型只决定「认没认对题」。
  *
  * 走 WorkBuddy 云服务的免密钥 LLM 通道：无需 API Key，
  * publishableKey 只标识应用，权限由服务端校验。
- * 真机首次使用前，需在微信开发者工具里「构建 npm」一次。
  */
 
 var cloud = require('./cloud.js');
@@ -40,7 +44,19 @@ var SYSTEM_PROMPT = [
   '要求：数字必须从图中如实识别，不得推测或修正；labels/values 长度一致；只输出 JSON，不要任何解释文字。'
 ].join('\n');
 
-/* 读照片为 base64 data URL */
+/* 读照片为 base64 data URL（先压图：真机照片太大是识别失败的首要嫌疑） */
+function compressImage(filePath) {
+  return new Promise(function (resolve) {
+    if (!wx.compressImage) { resolve(filePath); return; }
+    wx.compressImage({
+      src: filePath,
+      quality: 40,
+      success: function (res) { resolve(res.tempFilePath); },
+      fail: function () { resolve(filePath); } // 压缩失败就用原图
+    });
+  });
+}
+
 function readImage(filePath) {
   return new Promise(function (resolve, reject) {
     wx.getFileSystemManager().readFile({
@@ -61,20 +77,88 @@ function stripFence(text) {
   return t.trim();
 }
 
-/* 校验并规范化模型输出，坏项直接丢弃 */
+/* 「25+38」「60-24」这类简单两整数算式 → 竖式题型（模型归为 expression 时的兜底） */
+var SIMPLE_EXPR = /^\s*(\d{1,4})\s*([+\-−×*xX÷/])\s*(\d{1,4})\s*$/;
+function exprToVertical(expr) {
+  var m = SIMPLE_EXPR.exec(String(expr || ''));
+  if (!m) return null;
+  var a = Number(m[1]), b = Number(m[3]), op = m[2];
+  if (op === '+') return { kind: 'vertical_add', params: { a: a, b: b } };
+  if (op === '-' || op === '−') return a >= b ? { kind: 'vertical_sub', params: { a: a, b: b } } : null;
+  if (op === '×' || op === '*' || op === 'x' || op === 'X') return { kind: 'vertical_mul', params: { a: a, b: b } };
+  if (op === '÷' || op === '/') return b !== 0 && a % b === 0 ? { kind: 'vertical_div', params: { a: a, b: b } } : null;
+  return null;
+}
+
+/* kind 别名归一（模型偶尔输出变体写法） */
+function normalizeKind(kind) {
+  var k = String(kind || '').trim();
+  if (KINDS.indexOf(k) >= 0) return k;
+  var alias = {
+    vertical: null, // 有 op 才能定，在 normalizeQuestions 里特判
+    addition: 'vertical_add', add: 'vertical_add', plus: 'vertical_add',
+    subtraction: 'vertical_sub', subtract: 'vertical_sub', minus: 'vertical_sub',
+    multiplication: 'vertical_mul', mul: 'vertical_mul',
+    division: 'vertical_div', div: 'vertical_div',
+    expression_expr: 'expression', formula: 'expression', equation_expr: 'expression'
+  };
+  return alias[k] !== undefined ? alias[k] : null;
+}
+
+/* 校验并规范化模型输出，坏项直接丢弃；能救的救回来 */
 function normalizeQuestions(raw) {
   var list = raw && raw.questions;
   if (!Array.isArray(list)) return null;
   var out = [];
   for (var i = 0; i < list.length; i++) {
     var q = list[i];
-    if (!q || KINDS.indexOf(q.kind) < 0) continue;
-    if (!q.params || typeof q.params !== 'object') continue;
+    if (!q || !q.params || typeof q.params !== 'object') continue;
+
+    var kind = normalizeKind(q.kind);
+    var params = q.params;
+
+    // kind='vertical' 无方向：看 params 里有没有 op/expr 线索
+    if (q.kind === 'vertical' && !kind) {
+      if (params.op === '+') kind = 'vertical_add';
+      else if (params.op === '-') kind = 'vertical_sub';
+    }
+
+    // expression：简单两整数±×÷直接转竖式（用户预期看到竖式板）
+    if (kind === 'expression' && params.expr) {
+      var v = exprToVertical(params.expr);
+      if (v) { kind = v.kind; params = v.params; }
+    }
+
+    if (!kind || KINDS.indexOf(kind) < 0) continue;
+
+    // 数字参数统一强转（模型偶尔返回字符串数字）
+    var np = {};
+    var numKeys = ['a', 'b', 'c', 'd', 'S', 'D', 'r'];
+    for (var key in params) {
+      if (numKeys.indexOf(key) >= 0) {
+        var n = Number(params[key]);
+        if (!isFinite(n)) { np = null; break; }
+        np[key] = n;
+      } else {
+        np[key] = params[key];
+      }
+    }
+    if (!np) continue;
+
+    // 竖式加减必须 a>b（减法）或都是正整数
+    if (kind === 'vertical_sub' && np.a <= np.b) continue;
+
+    // chart 的 labels/values 校验
+    if (kind === 'chart_bar') {
+      if (!Array.isArray(np.labels) || !Array.isArray(np.values) || !np.labels.length || np.labels.length !== np.values.length) continue;
+    }
+    if (kind === 'expression' && !np.expr) continue;
+
     out.push({
       no: Number(q.no) || i + 1,
       stem: String(q.stem || ''),
-      kind: q.kind,
-      params: q.params,
+      kind: kind,
+      params: np,
       confidence: Math.max(0, Math.min(100, Number(q.confidence) || 0))
     });
   }
@@ -94,9 +178,10 @@ function friendlyError(err) {
   return new Error('识别没成功，请重拍一张试试');
 }
 
-/* 真实识别：图片 → 多模态模型 → 题目 JSON（流式接口，一次性收满再解析） */
-async function recognizeCloud(filePath) {
-  var dataUrl = await readImage(filePath);
+/* 单次云端识别：图片 → 多模态模型 → 题目 JSON（流式接口，一次性收满再解析） */
+async function recognizeOnce(filePath) {
+  var compressed = await compressImage(filePath);
+  var dataUrl = await readImage(compressed);
 
   var answer = '';
   var stream = await cloud.llm.chat.completions.create({
@@ -120,6 +205,8 @@ async function recognizeCloud(filePath) {
     if (delta && delta.content) answer += delta.content;
   }
 
+  console.log('[识别] 模型原始输出：', answer.slice(0, 300));
+
   var parsed;
   try { parsed = JSON.parse(stripFence(answer)); }
   catch (e) { throw new Error('识别结果解析失败，请重拍一张试试'); }
@@ -130,15 +217,26 @@ async function recognizeCloud(filePath) {
   return { source: 'cloud', questions: questions };
 }
 
+/* 真实识别入口：失败自动重试一次（网络抖动/流中断等瞬态错误） */
+async function recognizeCloud(filePath) {
+  try {
+    return await recognizeOnce(filePath);
+  } catch (firstErr) {
+    console.warn('[识别] 第一次尝试失败，重试一次：', firstErr && firstErr.message);
+    try {
+      return await recognizeOnce(filePath);
+    } catch (err) {
+      if (err && err.error && err.error.code) throw friendlyError(err);
+      throw err;
+    }
+  }
+}
+
 /* ---------------- 对外入口 ---------------- */
 
 function recognize(filePath) {
   // 有照片走云端识别；没有照片（开发者工具里的「示例数据」入口）继续走本地示例
-  if (filePath) return recognizeCloud(filePath).catch(function (err) {
-    // 云端失败时把友好信息抛回页面；页面统一显示并给出「重拍」按钮
-    if (err && err.error && err.error.code) throw friendlyError(err);
-    throw err;
-  });
+  if (filePath) return recognizeCloud(filePath);
 
   return new Promise(function (resolve) {
     setTimeout(function () {
