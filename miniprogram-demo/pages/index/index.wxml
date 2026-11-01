@@ -1,7 +1,7 @@
 <view class="page">
   <view class="topbar">
     <view class="brand">数学小步</view>
-    <view class="ver">v0.7</view>
+    <view class="ver">v0.8</view>
     <view class="count">{{solved}} 题已讲</view>
   </view>
 
@@ -31,7 +31,7 @@
         <text class="chevron">›</text>
       </view>
 
-      <view class="demo-note">v0.7：新增几何板块——正方形、长方形反求边长、三角形、组合图形的周长与面积。「看示例题」会随机抽 3 类演示。</view>
+      <view class="demo-note">v0.8：几何板块补齐——正方形、长方形、三角形、组合图形、圆、平行四边形、梯形的周长与面积。「看示例题」会随机抽 3 类演示。</view>
     </view>
   </block>
 
@@ -230,6 +230,31 @@
                 <text x="25" y="90" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
                 <text x="75" y="198" text-anchor="middle" class="sh-dim">{{snap.c}}</text>
                 <text x="18" y="158" text-anchor="middle" class="sh-dim">{{snap.d}}</text>
+              </svg>
+              <!-- 圆 -->
+              <svg wx:elif="{{snap.shape === 'circle'}}" viewBox="0 0 200 200" class="sh-svg">
+                <circle cx="100" cy="100" r="70" class="sh-fill {{snap.hl === 'area' ? 'on' : ''}}" />
+                <circle cx="100" cy="100" r="70" fill="none" class="sh-stroke {{snap.hl === 'peri' ? 'on' : ''}}" stroke-width="3" />
+                <line x1="100" y1="100" x2="170" y2="100" class="sh-stroke" stroke-width="2" />
+                <circle cx="100" cy="100" r="3" fill="#3b4a70" />
+                <text x="132" y="92" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
+              </svg>
+              <!-- 平行四边形 -->
+              <svg wx:elif="{{snap.shape === 'parallelogram'}}" viewBox="0 0 240 160" class="sh-svg">
+                <polygon points="50,130 170,130 210,50 90,50" class="sh-fill {{snap.hl === 'area' || snap.hl === 'cut' ? 'on' : ''}}" />
+                <polygon points="50,130 170,130 210,50 90,50" fill="none" class="sh-stroke" stroke-width="3" />
+                <line x1="170" y1="50" x2="170" y2="130" stroke-dasharray="4,3" class="sh-dash" stroke-width="2" />
+                <text x="130" y="152" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
+                <text x="185" y="92" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
+              </svg>
+              <!-- 梯形 -->
+              <svg wx:elif="{{snap.shape === 'trapezoid'}}" viewBox="0 0 240 160" class="sh-svg">
+                <polygon points="70,50 190,50 220,130 40,130" class="sh-fill {{snap.hl === 'area' ? 'on' : ''}}" />
+                <polygon points="70,50 190,50 220,130 40,130" fill="none" class="sh-stroke" stroke-width="3" />
+                <line x1="130" y1="50" x2="130" y2="130" stroke-dasharray="4,3" class="sh-dash" stroke-width="2" />
+                <text x="130" y="40" text-anchor="middle" class="sh-dim">{{snap.a}}</text>
+                <text x="130" y="152" text-anchor="middle" class="sh-dim">{{snap.b}}</text>
+                <text x="143" y="92" text-anchor="middle" class="sh-dim">{{snap.c}}</text>
               </svg>
             </view>
             <view class="sheq" wx:if="{{snap.eq}}">{{snap.eq}}</view>

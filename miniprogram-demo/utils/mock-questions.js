@@ -118,6 +118,25 @@ function qComposite() {
   return { no: 12, stem: '一个 L 形组合图形，可以分成 ' + a + '×' + b + ' 和 ' + c + '×' + d + ' 两个长方形，求总面积。', kind: 'composite_area', params: { a: a, b: b, c: c, d: d }, confidence: rnd(91, 98) };
 }
 
+/* 圆的周长面积 */
+function qCircle() {
+  var r = rnd(2, 8);
+  return { no: 13, stem: '一个圆的半径是 ' + r + ' 厘米，它的周长和面积各是多少？（π 取 3.14）', kind: 'circle_peri_area', params: { r: r }, confidence: rnd(91, 98) };
+}
+
+/* 平行四边形面积 */
+function qParallelogram() {
+  var a = rnd(4, 12);
+  var h = rnd(3, 9);
+  return { no: 14, stem: '一个平行四边形的底是 ' + a + ' 厘米，高是 ' + h + ' 厘米，它的面积是多少？', kind: 'parallelogram_area', params: { a: a, h: h }, confidence: rnd(91, 98) };
+}
+
+/* 梯形面积 */
+function qTrapezoid() {
+  var a = rnd(3, 8), b = rnd(a + 1, 12), h = rnd(3, 9);
+  return { no: 15, stem: '一个梯形的上底是 ' + a + ' 厘米，下底是 ' + b + ' 厘米，高是 ' + h + ' 厘米，它的面积是多少？', kind: 'trapezoid_area', params: { a: a, b: b, h: h }, confidence: rnd(91, 98) };
+}
+
 /* 轮换：竖式必出（第 1 题固定），另从剩余七类里随机抽 2 题（保证新原语能随机出现，且竖式稳定可见） */
 /* 竖式乘法 */
 function qVerticalMul() {
@@ -156,7 +175,7 @@ function mockQuestions() {
   // 第 2 题固定一个「乘除/综合运算」类（保证新引擎可见）
   var calc = pick([qVerticalMul, qVerticalDiv, qExpression]);
   // 第 3 题：几何类优先（本轮目标），从几何题库随机抽；其余类作为补充池
-  var geo = [qGeoBoard, qSquare, qRectReverse, qTriangle, qComposite];
+  var geo = [qGeoBoard, qSquare, qRectReverse, qTriangle, qComposite, qCircle, qParallelogram, qTrapezoid];
   var rest = [qBarMore, qFracAdd, qNumberLine, qCounter, qBalance, qChart];
   var third;
   if (Math.random() < 0.6) {

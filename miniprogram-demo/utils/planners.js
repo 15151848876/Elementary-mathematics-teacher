@@ -944,6 +944,108 @@ function planComposite(a, b, c, d) {
   return { kind: 'shape', answer: '面积 ' + total, steps: steps };
 }
 
+/* ============================ 几何：圆的周长/面积 ============================ */
+
+function planCircle(r) {
+  var PI = 3.14;
+  var peri = Math.round(2 * PI * r * 100) / 100;
+  var area = Math.round(PI * r * r * 100) / 100;
+  var periTxt = String(peri);
+  var areaTxt = String(area);
+  var steps = [];
+  steps.push({
+    title: '画出圆',
+    text: '圆的半径是 ' + r + '，直径是 ' + (r * 2) + '。',
+    snap: { kind: 'shape', shape: 'circle', a: r, hl: null, eq: '' }
+  });
+  steps.push({
+    title: '算周长',
+    text: '周长 = 2 × π × 半径 = 2 × 3.14 × ' + r + ' = ' + periTxt + '。',
+    snap: { kind: 'shape', shape: 'circle', a: r, hl: 'peri', eq: '周长 = 2 × 3.14 × ' + r + ' = ' + periTxt }
+  });
+  steps.push({
+    title: '想一想面积',
+    text: '面积 = π × 半径 × 半径。先自己想一想：3.14 × ' + r + ' × ' + r + ' 等于几？',
+    ask: {
+      question: '3.14 × ' + r + ' × ' + r + ' = ?',
+      options: [areaTxt, periTxt, String(Math.round(PI * r * 100) / 100)],
+      answer: 0,
+      hint: '面积 = π × 半径² = 3.14 × ' + r + ' × ' + r + ' = ' + areaTxt + '。'
+    },
+    snap: { kind: 'shape', shape: 'circle', a: r, hl: 'area', eq: '面积 = 3.14 × ' + r + ' × ' + r + ' = ?' }
+  });
+  steps.push({
+    title: '答案是 ' + areaTxt,
+    text: '面积 = π × 半径² = 3.14 × ' + r + ' × ' + r + ' = ' + areaTxt + '。周长和面积别混：周长是“绕一圈”，面积是“圆面大小”。',
+    snap: { kind: 'shape', shape: 'circle', a: r, hl: 'area', eq: '面积 = ' + areaTxt }
+  });
+  return { kind: 'shape', answer: '周长 ' + periTxt + '，面积 ' + areaTxt, steps: steps };
+}
+
+/* ============================ 几何：平行四边形面积 ============================ */
+
+function planParallelogram(a, h) {
+  var area = a * h;
+  var steps = [];
+  steps.push({
+    title: '画出平行四边形',
+    text: '底是 ' + a + '，高是 ' + h + '。',
+    snap: { kind: 'shape', shape: 'parallelogram', a: a, b: h, hl: null, eq: '' }
+  });
+  steps.push({
+    title: '沿着高剪开，拼成长方形',
+    text: '沿高剪一刀，把左边三角形移到右边，就拼成了一个长方形：长 = 底 = ' + a + '，宽 = 高 = ' + h + '。',
+    snap: { kind: 'shape', shape: 'parallelogram', a: a, b: h, hl: 'cut', eq: '拼成长方形：长 ' + a + '，宽 ' + h }
+  });
+  steps.push({
+    title: '面积 = 底 × 高',
+    text: '面积 = 底 × 高 = ' + a + ' × ' + h + ' = ' + area + '。',
+    snap: { kind: 'shape', shape: 'parallelogram', a: a, b: h, hl: 'area', eq: '面积 = ' + a + ' × ' + h + ' = ' + area }
+  });
+  steps.push({
+    title: '答案是 ' + area,
+    text: '注意：平行四边形的高是“垂直的距离”，不是斜边。面积 = 底 × 高 = ' + area + '。',
+    snap: { kind: 'shape', shape: 'parallelogram', a: a, b: h, hl: 'area', eq: '面积 = ' + area }
+  });
+  return { kind: 'shape', answer: '面积 ' + area, steps: steps };
+}
+
+/* ============================ 几何：梯形面积 ============================ */
+
+function planTrapezoid(a, b, h) {
+  // 上底 a、下底 b、高 h
+  var sum = a + b;
+  var prod = sum * h;
+  var areaTxt = (prod % 2 === 0) ? String(prod / 2) : (prod) + '/2';
+  var steps = [];
+  steps.push({
+    title: '画出梯形',
+    text: '上底 ' + a + '，下底 ' + b + '，高 ' + h + '。',
+    snap: { kind: 'shape', shape: 'trapezoid', a: a, b: b, c: h, hl: null, eq: '' }
+  });
+  steps.push({
+    title: '两个梯形拼成平行四边形',
+    text: '把两个一样的梯形拼起来，就是一个平行四边形，底 = 上底 + 下底 = ' + a + ' + ' + b + ' = ' + sum + '。',
+    snap: { kind: 'shape', shape: 'trapezoid', a: a, b: b, c: h, hl: 'doub', eq: '上底 + 下底 = ' + sum }
+  });
+  steps.push({
+    title: '平行四边形面积 =（上底+下底）× 高',
+    text: '拼成的平行四边形面积 = ' + sum + ' × ' + h + ' = ' + prod + '。',
+    snap: { kind: 'shape', shape: 'trapezoid', a: a, b: b, c: h, hl: 'par', eq: '平行四边形 = ' + sum + ' × ' + h + ' = ' + prod }
+  });
+  steps.push({
+    title: '梯形是它的一半',
+    text: '梯形 = 平行四边形 ÷ 2 = ' + prod + ' ÷ 2 = ' + areaTxt + '。',
+    snap: { kind: 'shape', shape: 'trapezoid', a: a, b: b, c: h, hl: 'half', eq: '面积 = ' + prod + ' ÷ 2 = ' + areaTxt }
+  });
+  steps.push({
+    title: '答案是 ' + areaTxt,
+    text: '梯形面积 =（上底 + 下底）× 高 ÷ 2 = ' + areaTxt + '。',
+    snap: { kind: 'shape', shape: 'trapezoid', a: a, b: b, c: h, hl: 'area', eq: '面积 = ' + areaTxt }
+  });
+  return { kind: 'shape', answer: '面积 ' + areaTxt, steps: steps };
+}
+
 /* ============================ 天平与简易方程 ============================ */
 
 function planBalance(a, b, c) {
@@ -1103,6 +1205,15 @@ function build(q) {
   } else if (q.kind === 'composite_area') {
     plan = planComposite(p.a, p.b, p.c, p.d);
     topic = '组合图形面积';
+  } else if (q.kind === 'circle_peri_area') {
+    plan = planCircle(p.r);
+    topic = '圆的周长面积';
+  } else if (q.kind === 'parallelogram_area') {
+    plan = planParallelogram(p.a, p.h);
+    topic = '平行四边形面积';
+  } else if (q.kind === 'trapezoid_area') {
+    plan = planTrapezoid(p.a, p.b, p.h);
+    topic = '梯形面积';
   } else if (q.kind === 'balance_eq') {
     plan = planBalance(p.a, p.b, p.c);
     topic = '天平解方程';
@@ -1163,6 +1274,9 @@ module.exports = {
   planRectReverse: planRectReverse,
   planTriangle: planTriangle,
   planComposite: planComposite,
+  planCircle: planCircle,
+  planParallelogram: planParallelogram,
+  planTrapezoid: planTrapezoid,
   planBalance: planBalance,
   planChart: planChart,
   build: build

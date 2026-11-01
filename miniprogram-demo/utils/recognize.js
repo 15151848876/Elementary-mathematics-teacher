@@ -20,7 +20,7 @@
 var cloud = require('./cloud.js');
 var MODEL_ID = 'glm-5.3-flash'; // 多模态视觉模型，可换成目录里其它 supportsImages 的模型
 
-var KINDS = ['vertical_add', 'vertical_sub', 'vertical_mul', 'vertical_div', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar', 'expression', 'square_peri_area', 'rect_reverse', 'triangle_area', 'composite_area'];
+var KINDS = ['vertical_add', 'vertical_sub', 'vertical_mul', 'vertical_div', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar', 'expression', 'square_peri_area', 'rect_reverse', 'triangle_area', 'composite_area', 'circle_peri_area', 'parallelogram_area', 'trapezoid_area'];
 
 var SYSTEM_PROMPT = [
   '你是小学数学试卷识别器。输入一张试卷照片，你要逐题识别，输出严格的 JSON。',
@@ -45,6 +45,9 @@ var SYSTEM_PROMPT = [
   '16. rect_reverse —— 长方形，已知周长和其中一条边，求另一条边。params: {"S":周长,"known":已知边,"unit":单位字(如"厘米")}',
   '17. triangle_area —— 三角形，已知底和高求面积。params: {"a":底,"h":高}',
   '18. composite_area —— 组合图形（可拆成两个长方形），求总面积。params: {"a":第一块的长,"b":第一块的宽,"c":第二块的长,"d":第二块的宽}',
+  '19. circle_peri_area —— 圆，已知半径求周长和面积。params: {"r":半径}',
+  '20. parallelogram_area —— 平行四边形，已知底和高求面积。params: {"a":底,"h":高}',
+  '21. trapezoid_area —— 梯形，已知上底、下底、高求面积。params: {"a":上底,"b":下底,"h":高}',
   '要求：数字必须从图中如实识别，不得推测或修正；labels/values 长度一致；只输出 JSON，不要任何解释文字。'
 ].join('\n');
 
