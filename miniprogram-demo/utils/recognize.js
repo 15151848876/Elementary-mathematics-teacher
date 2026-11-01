@@ -20,7 +20,7 @@
 var cloud = require('./cloud.js');
 var MODEL_ID = 'glm-5.3-flash'; // 多模态视觉模型，可换成目录里其它 supportsImages 的模型
 
-var KINDS = ['vertical_add', 'vertical_sub', 'vertical_mul', 'vertical_div', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar', 'expression', 'square_peri_area', 'square_side', 'rect_reverse', 'triangle_area', 'composite_area', 'circle_peri_area', 'parallelogram_area', 'trapezoid_area'];
+var KINDS = ['vertical_add', 'vertical_sub', 'vertical_mul', 'vertical_div', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar', 'expression', 'square_peri_area', 'square_side', 'rect_reverse', 'triangle_area', 'composite_area', 'composite_peri', 'circle_peri_area', 'parallelogram_area', 'trapezoid_area'];
 
 var SYSTEM_PROMPT = [
   '你是小学数学试卷识别器。输入一张试卷照片，你要逐题识别，输出严格的 JSON。',
@@ -45,7 +45,8 @@ var SYSTEM_PROMPT = [
   '16. square_side —— 正方形反求边长（周长或面积已知，边长未知）。params: {"S":周长或面积的数值,"by":"peri"(已知周长)或"area"(已知面积),"unit":单位字(如"厘米")}。例：「正方形周长40厘米，求边长」→ {"S":40,"by":"peri","unit":"厘米"}',
   '17. rect_reverse —— 长方形（不是正方形！），已知周长和其中一条边，求另一条边。params: {"S":周长,"known":已知边,"unit":单位字(如"厘米")}。注意：必须图中或题干明确给出一条边的长度，没有已知边就不能用这个题型',
   '18. triangle_area —— 三角形，已知底和高求面积。params: {"a":底,"h":高}',
-  '19. composite_area —— 组合图形（可拆成两个长方形），求总面积。params: {"a":第一块的长,"b":第一块的宽,"c":第二块的长,"d":第二块的宽}',
+  '19. composite_area —— 组合图形（可拆成两个长方形），求总面积。params: {"a":第一块的长,"b":第一块的宽,"c":第二块的长,"d":第二块的宽}。仅当题目问「面积」时使用',
+  '23. composite_peri —— 凹形/U形组合图形求周长（平移法）。params: {"w":整体宽,"h":整体高,"d":凹口深,多个凹口用逗号分隔如"12,12","unit":单位字(如"厘米")}。仅当题目问「周长」且图形有凹口时使用；典型题「下面图形的周长是多少」配 U 形图',
   '20. circle_peri_area —— 圆，已知半径求周长和面积。params: {"r":半径}',
   '21. parallelogram_area —— 平行四边形，已知底和高求面积。params: {"a":底,"h":高}',
   '22. trapezoid_area —— 梯形，已知上底、下底、高求面积。params: {"a":上底,"b":下底,"h":高}',
@@ -54,6 +55,7 @@ var SYSTEM_PROMPT = [
   '- 问「面积/多大/铺满」→ 属于求面积，选带 area 的 kind（triangle_area、parallelogram_area、trapezoid_area、composite_area、square_peri_area、circle_peri_area）；',
   '- 问「边长/另一条边/半径」→ 属于求边长，此时看图形：正方形且已知周长或面积 → square_side；长方形且同时知道周长和一条边 → rect_reverse；圆已知周长或面积求半径 → 仍用 circle_peri_area；',
   '- 严禁把「求边长」理解成「求周长」，严禁把「求周长」理解成「求面积」。题干里的「周长」「面积」「边长」三个词是判定的关键。',
+  '- 组合图形：题干问「周长」→ 用 composite_peri（平移法，凹形图）；题干问「面积」→ 才用 composite_area。绝不能问周长却去算面积。',
   '- 特别注意：「正方形」和「长方形」是两种图形。题干说「正方形」时绝不能用 rect_reverse（长方形反求一边），正方形只有一种边长。',
   '【want 字段务必填写】geoboard_rect 和 square_peri_area 都要输出 want 字段，用来告诉程序这题「只求周长 / 只求面积 / 都求」：',
   '- 题干只问「周长/绕一圈」→ want="peri"；只问「面积/多大/铺满」→ want="area"；两个都问（如"周长和面积分别是多少"）→ want="both"；',
@@ -155,8 +157,9 @@ function normalizeQuestions(raw) {
 
     // 数字参数统一强转（模型偶尔返回字符串数字）
     var np = {};
-    var numKeys = ['a', 'b', 'c', 'd', 'S', 'D', 'r'];
+    var numKeys = ['a', 'b', 'c', 'd', 'S', 'D', 'r', 'w', 'h'];
     for (var key in params) {
+      if (kind === 'composite_peri' && key === 'd') { np[key] = params[key]; continue; } // 凹口深允许多值字符串
       if (numKeys.indexOf(key) >= 0) {
         var n = Number(params[key]);
         if (!isFinite(n)) { np = null; break; }
@@ -182,6 +185,14 @@ function normalizeQuestions(raw) {
     // want 字段归一：只认 peri/area/both，其它（含缺失）回退为 both
     if (kind === 'geoboard_rect' || kind === 'square_peri_area') {
       if (np.want !== 'peri' && np.want !== 'area') np.want = 'both';
+    }
+
+    // composite_peri：凹口深允许多值 "12,12"，拆成字符串供 build 解析；w/h 必须为正
+    if (kind === 'composite_peri') {
+      if (!(np.w > 0) || !(np.h > 0)) continue;
+      var dRaw = String(params.d || '').trim();
+      if (!/^\d+(\.\d+)?(,\s*\d+(\.\d)?)*$/.test(dRaw)) continue; // 至少一个凹口深
+      np.d = dRaw;
     }
 
     // chart 的 labels/values 校验

@@ -985,6 +985,68 @@ function planSquareSide(S, by, unit) {
   return { kind: 'shape', answer: '边长 ' + side + unit, steps: steps };
 }
 
+/* ============================ 几何：凹形组合图形求周长（平移法） ============================ */
+/* U 形/凹形图形：整体宽 w、高 h、若干个凹口深 ds。
+   平移法：把凹口的竖边平移到外侧，周长 = 外接长方形周长 + 每个凹口多出的 2 条深边 */
+
+function planCompositePeri(w, h, ds, unit) {
+  unit = unit || '';
+  if (!(w > 0 && h > 0)) return null;
+  ds = (ds || []).filter(function (d) { return d > 0; });
+  if (!ds.length) return null; // 没有凹口深，走不了平移法
+  var extra = 0;
+  ds.forEach(function (d) { extra += 2 * d; });
+  var peri = 2 * (w + h) + extra;
+  var dsTxt = ds.join('、');
+  var steps = [];
+
+  function outlineSnap(hl, eq) {
+    return {
+      kind: 'geoboard', rows: h, cols: w, cells: [],
+      perim: true, hl: hl, eq: eq || '',
+      dimTop: String(w), dimSide: String(h)
+    };
+  }
+
+  steps.push({
+    title: '画出来看一看',
+    text: '整体宽 ' + w + unit + '，高 ' + h + unit + (ds.length ? '，凹口深 ' + dsTxt + unit : '') + '。先看它的外框——一个长方形。',
+    snap: outlineSnap(null, '')
+  });
+
+  steps.push({
+    title: '凹口的边能不能平移？',
+    text: '把凹口里竖着的边向外平移，正好补到左右两边上。先自己想一想：平移后周长和外面的长方形比，变大了还是不变？',
+    ask: {
+      question: '凹口的边平移到外框后，周长比长方形（' + (2 * (w + h)) + '）多了多少？',
+      options: ['多了 ' + extra, '一样多', '少了 ' + extra],
+      answer: 0,
+      hint: '每个凹口有 2 条深 ' + (ds.length ? dsTxt : '') + unit + ' 的竖边，平移后多出来：' + (ds.length > 1 ? ds.map(function (d) { return '2×' + d; }).join(' + ') : '2×' + ds[0]) + ' = ' + extra + unit + '。'
+    },
+    snap: outlineSnap('edge', '')
+  });
+
+  steps.push({
+    title: '用平移法算周长',
+    text: '水平方向：上下两边总长都是 ' + w + unit + '，不变。竖直方向：左右两边各 ' + h + unit + '，凹口的竖边多出 ' + (ds.length > 1 ? ds.map(function (d) { return '2×' + d; }).join(' + ') : '2×' + ds[0]) + ' = ' + extra + unit + '。',
+    snap: outlineSnap('edge', '周长 = (' + w + ' + ' + h + ') × 2 + ' + (ds.length > 1 ? '(' + ds.map(function (d) { return '2×' + d; }).join(' + ') + ')' : '2×' + ds[0]) + ' = ?')
+  });
+
+  steps.push({
+    title: '答案是 ' + peri + unit,
+    text: '周长 = (' + w + ' + ' + h + ') × 2 + ' + extra + ' = ' + (2 * (w + h)) + ' + ' + extra + ' = ' + peri + unit + '。',
+    snap: outlineSnap('edge', '周长 = (' + w + ' + ' + h + ') × 2 + ' + extra + ' = ' + peri)
+  });
+
+  steps.push({
+    title: '验算一下',
+    text: '长方形周长 (' + w + ' + ' + h + ') × 2 = ' + (2 * (w + h)) + '，加上凹口多出的 ' + extra + '，共 ' + peri + unit + '。对得上。',
+    snap: outlineSnap(null, '(' + w + ' + ' + h + ') × 2 + ' + extra + ' = ' + peri)
+  });
+
+  return { kind: 'shape', answer: '周长 ' + peri + unit, steps: steps };
+}
+
 /* ============================ 几何：三角形面积 ============================ */
 
 function planTriangle(a, h) {
@@ -1312,6 +1374,12 @@ function build(q) {
   } else if (q.kind === 'composite_area') {
     plan = planComposite(p.a, p.b, p.c, p.d);
     topic = '组合图形面积';
+  } else if (q.kind === 'composite_peri') {
+    var cpDs = String(p.d || '').indexOf(',') >= 0
+      ? String(p.d).split(',').map(Number)
+      : [p.d];
+    plan = planCompositePeri(p.w, p.h, cpDs, p.unit || '');
+    topic = '组合图形周长（平移法）';
   } else if (q.kind === 'circle_peri_area') {
     plan = planCircle(p.r);
     topic = '圆的周长面积';
