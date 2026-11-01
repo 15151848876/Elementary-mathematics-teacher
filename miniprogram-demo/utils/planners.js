@@ -882,6 +882,77 @@ function planRectReverse(S, known, unit) {
   return { kind: 'shape', answer: '另一边 ' + other + unit, steps: steps };
 }
 
+/* ============================ 几何：正方形反求边长（已知周长或面积） ============================ */
+
+function planSquareSide(S, by, unit) {
+  unit = unit || '';
+  var side, steps = [];
+
+  if (by === 'area') {
+    // 面积 = 边长 × 边长，小学阶段边长取整数
+    side = Math.round(Math.sqrt(S));
+    if (side <= 0 || side * side !== S) return null; // 不是完全平方数，讲不了
+    steps.push({
+      title: '画出来想一想',
+      text: '正方形的面积是 ' + S + unit + '，求边长。正方形四条边一样长。',
+      snap: { kind: 'shape', shape: 'square', a: null, b: null, hl: 'area', eq: '面积 = ' + S }
+    });
+    steps.push({
+      title: '面积 = 边长 × 边长',
+      text: '正方形的面积是「边长 × 边长」得到的。想一想：几 × 几 = ' + S + '？',
+      ask: {
+        question: '边长 × 边长 = ' + S + '，边长是几？',
+        options: [String(side), String(Math.round(S / 4)), String(side + 1)],
+        answer: 0,
+        hint: side + ' × ' + side + ' = ' + S + '。所以边长是 ' + side + unit + '。'
+      },
+      snap: { kind: 'shape', shape: 'square', a: null, b: null, hl: 'area', eq: '边长 × 边长 = ' + S }
+    });
+    steps.push({
+      title: '答案是 ' + side + unit,
+      text: side + ' × ' + side + ' = ' + S + '，所以边长是 ' + side + unit + '。',
+      snap: { kind: 'shape', shape: 'square', a: side, b: null, hl: 'side', eq: '边长 = ' + side }
+    });
+    steps.push({
+      title: '验算一下',
+      text: '边长 × 边长 = ' + side + ' × ' + side + ' = ' + S + '。对得上。',
+      snap: { kind: 'shape', shape: 'square', a: side, b: null, hl: 'check', eq: side + ' × ' + side + ' = ' + S }
+    });
+    return { kind: 'shape', answer: '边长 ' + side + unit, steps: steps };
+  }
+
+  // 默认：已知周长求边长
+  if (!(S > 0) || S % 4 !== 0) return null; // 周长不是 4 的倍数，边长非整数，讲不了
+  side = S / 4;
+  steps.push({
+    title: '画出来想一想',
+    text: '正方形的周长是 ' + S + unit + '，求边长。正方形四条边一样长。',
+    snap: { kind: 'shape', shape: 'square', a: null, b: null, hl: 'peri', eq: '周长 = ' + S }
+  });
+  steps.push({
+    title: '周长 = 边长 × 4',
+    text: '正方形有 4 条一样的边，所以边长 = 周长 ÷ 4 = ' + S + ' ÷ 4。先自己想一想等于几。',
+    ask: {
+      question: '边长 = ' + S + ' ÷ 4，等于几？',
+      options: [String(side), String(Math.round(S / 2)), String(side + 1)],
+      answer: 0,
+      hint: '四七二十八这类口诀倒过来想：' + side + ' × 4 = ' + S + '。所以边长是 ' + side + unit + '。'
+    },
+    snap: { kind: 'shape', shape: 'square', a: null, b: null, hl: 'peri', eq: '边长 = ' + S + ' ÷ 4 = ?' }
+  });
+  steps.push({
+    title: '答案是 ' + side + unit,
+    text: '边长 = ' + S + ' ÷ 4 = ' + side + unit + '。',
+    snap: { kind: 'shape', shape: 'square', a: side, b: null, hl: 'side', eq: '边长 = ' + S + ' ÷ 4 = ' + side }
+  });
+  steps.push({
+    title: '验算一下',
+    text: '边长 × 4 = ' + side + ' × 4 = ' + S + '。对得上。',
+    snap: { kind: 'shape', shape: 'square', a: side, b: null, hl: 'check', eq: side + ' × 4 = ' + S }
+  });
+  return { kind: 'shape', answer: '边长 ' + side + unit, steps: steps };
+}
+
 /* ============================ 几何：三角形面积 ============================ */
 
 function planTriangle(a, h) {
@@ -1197,8 +1268,12 @@ function build(q) {
     plan = planSquare(p.s);
     topic = '正方形周长面积';
   } else if (q.kind === 'rect_reverse') {
+    if (!(p.known > 0)) return null; // 缺已知边，讲不了（不硬讲，避免 null 出现在界面上）
     plan = planRectReverse(p.S, p.known, p.unit || '');
     topic = '长方形反求边长';
+  } else if (q.kind === 'square_side') {
+    plan = planSquareSide(p.S, p.by === 'area' ? 'area' : 'peri', p.unit || '');
+    topic = p.by === 'area' ? '正方形面积反求边长' : '正方形周长反求边长';
   } else if (q.kind === 'triangle_area') {
     plan = planTriangle(p.a, p.h);
     topic = '三角形面积';

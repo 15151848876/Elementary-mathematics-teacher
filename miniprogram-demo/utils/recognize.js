@@ -20,7 +20,7 @@
 var cloud = require('./cloud.js');
 var MODEL_ID = 'glm-5.3-flash'; // 多模态视觉模型，可换成目录里其它 supportsImages 的模型
 
-var KINDS = ['vertical_add', 'vertical_sub', 'vertical_mul', 'vertical_div', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar', 'expression', 'square_peri_area', 'rect_reverse', 'triangle_area', 'composite_area', 'circle_peri_area', 'parallelogram_area', 'trapezoid_area'];
+var KINDS = ['vertical_add', 'vertical_sub', 'vertical_mul', 'vertical_div', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar', 'expression', 'square_peri_area', 'square_side', 'rect_reverse', 'triangle_area', 'composite_area', 'circle_peri_area', 'parallelogram_area', 'trapezoid_area'];
 
 var SYSTEM_PROMPT = [
   '你是小学数学试卷识别器。输入一张试卷照片，你要逐题识别，输出严格的 JSON。',
@@ -42,17 +42,19 @@ var SYSTEM_PROMPT = [
   '13. vertical_div —— 竖式除法（数字上下排列 + ÷ 号）。params: {"a":被除数,"b":除数}',
   '14. expression —— 任意四则混合算式/脱式计算（含括号、分数、小数），如 "8×3+4"、"1/2+1/3"、"0.5×4"。params: {"expr":"完整算式字符串"}。竖式能判定的优先判定为竖式，其它普通算式都归这一类。',
   '15. square_peri_area —— 正方形，已知边长求周长和面积。params: {"s":边长}',
-  '16. rect_reverse —— 长方形，已知周长和其中一条边，求另一条边。params: {"S":周长,"known":已知边,"unit":单位字(如"厘米")}',
-  '17. triangle_area —— 三角形，已知底和高求面积。params: {"a":底,"h":高}',
-  '18. composite_area —— 组合图形（可拆成两个长方形），求总面积。params: {"a":第一块的长,"b":第一块的宽,"c":第二块的长,"d":第二块的宽}',
-  '19. circle_peri_area —— 圆，已知半径求周长和面积。params: {"r":半径}',
-  '20. parallelogram_area —— 平行四边形，已知底和高求面积。params: {"a":底,"h":高}',
-  '21. trapezoid_area —— 梯形，已知上底、下底、高求面积。params: {"a":上底,"b":下底,"h":高}',
+  '16. square_side —— 正方形反求边长（周长或面积已知，边长未知）。params: {"S":周长或面积的数值,"by":"peri"(已知周长)或"area"(已知面积),"unit":单位字(如"厘米")}。例：「正方形周长40厘米，求边长」→ {"S":40,"by":"peri","unit":"厘米"}',
+  '17. rect_reverse —— 长方形（不是正方形！），已知周长和其中一条边，求另一条边。params: {"S":周长,"known":已知边,"unit":单位字(如"厘米")}。注意：必须图中或题干明确给出一条边的长度，没有已知边就不能用这个题型',
+  '18. triangle_area —— 三角形，已知底和高求面积。params: {"a":底,"h":高}',
+  '19. composite_area —— 组合图形（可拆成两个长方形），求总面积。params: {"a":第一块的长,"b":第一块的宽,"c":第二块的长,"d":第二块的宽}',
+  '20. circle_peri_area —— 圆，已知半径求周长和面积。params: {"r":半径}',
+  '21. parallelogram_area —— 平行四边形，已知底和高求面积。params: {"a":底,"h":高}',
+  '22. trapezoid_area —— 梯形，已知上底、下底、高求面积。params: {"a":上底,"b":下底,"h":高}',
   '【几何题判定规则，务必遵守】先仔细读题干，判断题目问的是「哪个量」，再决定 kind：',
   '- 问「周长/绕一圈多长」→ 属于求周长，选带 peri 的 kind（square_peri_area 或 circle_peri_area）；',
   '- 问「面积/多大/铺满」→ 属于求面积，选带 area 的 kind（triangle_area、parallelogram_area、trapezoid_area、composite_area、square_peri_area、circle_peri_area）；',
-  '- 问「边长/另一条边/半径」→ 属于求边长，选 rect_reverse（已知周长反求一边）或 square_peri_area（已知面积反求边长）；',
+  '- 问「边长/另一条边/半径」→ 属于求边长，此时看图形：正方形且已知周长或面积 → square_side；长方形且同时知道周长和一条边 → rect_reverse；圆已知周长或面积求半径 → 仍用 circle_peri_area；',
   '- 严禁把「求边长」理解成「求周长」，严禁把「求周长」理解成「求面积」。题干里的「周长」「面积」「边长」三个词是判定的关键。',
+  '- 特别注意：「正方形」和「长方形」是两种图形。题干说「正方形」时绝不能用 rect_reverse（长方形反求一边），正方形只有一种边长。',
   '要求：数字必须从图中如实识别，不得推测或修正；labels/values 长度一致；只输出 JSON，不要任何解释文字。'
 ].join('\n');
 
@@ -159,6 +161,15 @@ function normalizeQuestions(raw) {
 
     // 竖式加减必须 a>b（减法）或都是正整数
     if (kind === 'vertical_sub' && np.a <= np.b) continue;
+
+    // 正方形反求边长：S 必须为正数；by 只认 peri/area，缺省时按周长处理
+    if (kind === 'square_side') {
+      if (!(np.S > 0)) continue;
+      if (np.by !== 'peri' && np.by !== 'area') np.by = 'peri';
+    }
+
+    // 长方形反求边长：必须给出已知边 known（正方形题不该走到这里，prompt 已拦截，这里兜底丢弃）
+    if (kind === 'rect_reverse' && !(np.known > 0)) continue;
 
     // chart 的 labels/values 校验
     if (kind === 'chart_bar') {
