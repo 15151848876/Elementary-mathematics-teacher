@@ -16,7 +16,7 @@
 var cloud = require('./cloud.js');
 var MODEL_ID = 'glm-5.3-flash'; // 多模态视觉模型，可换成目录里其它 supportsImages 的模型
 
-var KINDS = ['vertical_add', 'vertical_sub', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar'];
+var KINDS = ['vertical_add', 'vertical_sub', 'vertical_mul', 'vertical_div', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar', 'expression'];
 
 var SYSTEM_PROMPT = [
   '你是小学数学试卷识别器。输入一张试卷照片，你要逐题识别，输出严格的 JSON。',
@@ -34,6 +34,9 @@ var SYSTEM_PROMPT = [
   '9. geoboard_rect —— 方格纸上求长方形周长/面积（r 行 c 列）。params: {"r":行数(宽),"c":列数(长)}',
   '10. balance_eq —— 天平表示的一步方程 x + a = c。params: {"a":已知加数,"b":未知数个数(通常1),"c":和}',
   '11. chart_bar —— 条形统计图（几个类别各有多少）。params: {"labels":["类别1","类别2",...],"values":[数值1,数值2,...]}',
+  '12. vertical_mul —— 竖式乘法（数字上下排列 + × 号 + 横线）。params: {"a":被乘数,"b":乘数}',
+  '13. vertical_div —— 竖式除法（数字上下排列 + ÷ 号）。params: {"a":被除数,"b":除数}',
+  '14. expression —— 任意四则混合算式/脱式计算（含括号、分数、小数），如 "8×3+4"、"1/2+1/3"、"0.5×4"。params: {"expr":"完整算式字符串"}。竖式能判定的优先判定为竖式，其它普通算式都归这一类。',
   '要求：数字必须从图中如实识别，不得推测或修正；labels/values 长度一致；只输出 JSON，不要任何解释文字。'
 ].join('\n');
 

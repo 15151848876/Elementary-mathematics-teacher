@@ -247,6 +247,132 @@ function vertSnap(op, cols, aCells, bCells, carry, resCells) {
   };
 }
 
+/* ============================ 竖式：乘法 ============================ */
+
+function planMul(a, b) {
+  // 让 a 是较长的数（被乘数），b 是乘数；b 建议是 1~2 位
+  if (String(a).length < String(b).length) { var t = a; a = b; b = t; }
+  var prod = a * b;
+  var n = String(a).length;
+  var cols = Math.max(n + 1, String(prod).length);
+  var A = rtlNum(a);
+  var steps = [];
+  var asked = false;
+
+  steps.push({
+    title: '先摆好乘法竖式',
+    text: a + ' × ' + b + '。把 ' + b + ' 写在 ' + a + ' 的个位下面，从个位起逐位相乘。',
+    snap: vertSnap('×', cols, cells(a, cols), cells(b, cols), carryCells(new Array(cols).fill('')), cells('', cols))
+  });
+
+  // 单步：b 的每一位 × a 的每一位
+  var bStr = String(b);
+  var partials = [];
+  var bDigits = bStr.split('').reverse().map(function (c) { return Number(c); });
+
+  for (var bi = 0; bi < bDigits.length; bi++) {
+    var bd = bDigits[bi];
+    var carry = 0;
+    var lineStr = '';
+    var lineSteps = [];
+    for (var ai = 0; ai < n; ai++) {
+      var ad = A[ai];
+      var s = ad * bd + carry;
+      var out = s % 10;
+      carry = Math.floor(s / 10);
+      var say = posName(ai) + '：' + ad + ' × ' + bd;
+      if (carry) say += ' = ' + s + '，写 ' + out + '，向' + posName(ai + 1) + '进 ' + carry;
+      else say += ' = ' + s;
+      lineStr = String(out) + lineStr;
+      lineSteps.push({
+        title: '乘' + posName(ai),
+        text: say + '。',
+        snap: vertSnap('×', cols, cells(a, cols, ai, 'hl-a'), cells(b, cols), carryCells(new Array(cols).fill('')), cells(lineStr, cols, ai, 'new'))
+      });
+      if (carry && !asked && ai === n - 1) {
+        asked = true;
+        steps.push({
+          title: '想一想进位',
+          text: '先自己想一想，再选答案。',
+          ask: {
+            question: ad + ' × ' + bd + ' = ' + s + '，满十要向' + posName(ai + 1) + '进几？',
+            options: ['进 ' + carry, '不用进', '进 1'],
+            answer: 0,
+            hint: s + ' 里有 ' + carry + ' 个十，向' + posName(ai + 1) + '进 ' + carry + '。'
+          },
+          snap: vertSnap('×', cols, cells(a, cols, ai, 'hl-a'), cells(b, cols), carryCells(new Array(cols).fill('')), cells(lineStr, cols))
+        });
+      }
+    }
+    if (carry) {
+      lineStr = String(carry) + lineStr;
+    }
+    // 这一步的完整部分积
+    var partial = (bi === 0) ? lineStr : lineStr + new Array(bi + 1).join('0');
+    partials.push(partial);
+    steps.push({
+      title: '得部分积 ' + partial,
+      text: bd + ' × ' + a + ' = ' + Number(lineStr) * Math.pow(10, bi) + '。这是' + (bi === 0 ? '个位' : posName(bi)) + '乘出来的部分积。',
+      snap: vertSnap('×', cols, cells(a, cols), cells(b, cols), carryCells(new Array(cols).fill('')), cells(String(partial), cols))
+    });
+  }
+
+  // 部分积相加
+  if (partials.length > 1) {
+    steps.push({
+      title: '把部分积加起来',
+      text: partials.join(' + ') + ' = ' + prod + '。',
+      snap: vertSnap('×', cols, cells(a, cols), cells(b, cols), carryCells(new Array(cols).fill('')), cells(String(prod), cols))
+    });
+  }
+
+  steps.push({
+    title: '答案是 ' + prod,
+    text: a + ' × ' + b + ' = ' + prod + '。',
+    snap: vertSnap('×', cols, cells(a, cols), cells(b, cols), carryCells(new Array(cols).fill('')), cells(String(prod), cols))
+  });
+
+  return { kind: 'vertical', answer: String(prod), steps: steps };
+}
+
+/* ============================ 竖式：除法 ============================ */
+
+function planDiv(a, b) {
+  if (b === 0) return null;
+  var q = Math.floor(a / b);
+  var r = a % b;
+  var steps = [];
+  var cols = Math.max(String(a).length, String(q).length) + 1;
+
+  steps.push({
+    title: '先想：' + a + ' 里面有几个 ' + b,
+    text: '除法就是看 ' + a + ' 能被 ' + b + ' 分成几份。先估一估：' + b + ' × ？最接近 ' + a + '。',
+    snap: vertSnap('÷', cols, cells(a, cols), cells(b, cols), carryCells(new Array(cols).fill('')), cells('', cols))
+  });
+
+  steps.push({
+    title: '试商：' + b + ' × ' + q + ' = ' + (b * q),
+    text: b + ' × ' + q + ' = ' + (b * q) + '，' + (b * q) + ' 不超过 ' + a + '，商 ' + q + ' 合适。',
+    snap: vertSnap('÷', cols, cells(a, cols), cells(b, cols), carryCells(new Array(cols).fill('')), cells(String(q), cols))
+  });
+
+  if (r > 0) {
+    steps.push({
+      title: '算余数',
+      text: a + ' − ' + (b * q) + ' = ' + r + '。余数是 ' + r + '。',
+      snap: vertSnap('÷', cols, cells(a, cols), cells(b, cols), carryCells(new Array(cols).fill('')), cells(String(q), cols))
+    });
+  }
+
+  steps.push({
+    title: r > 0 ? '答案是 ' + q + ' 余 ' + r : '答案是 ' + q,
+    text: a + ' ÷ ' + b + ' = ' + q + (r > 0 ? ('……' + r) : '') + '。',
+    snap: vertSnap('÷', cols, cells(a, cols), cells(b, cols), carryCells(new Array(cols).fill('')), cells(String(q), cols))
+  });
+
+  return { kind: 'vertical', answer: r > 0 ? (q + '余' + r) : String(q), steps: steps };
+}
+
 /* ============================ 线段图 ============================ */
 
 function barSnap(maxU, rows, braces, eq) {
@@ -801,7 +927,8 @@ var META = {
   counter: { templateName: '小棒与计数器', tag: '数的认识' },
   geoboard: { templateName: '几何板', tag: '周长与面积' },
   balance: { templateName: '天平方程', tag: '简易方程' },
-  chart: { templateName: '统计图', tag: '数据统计' }
+  chart: { templateName: '统计图', tag: '数据统计' },
+  expression: { templateName: '脱式计算', tag: '综合运算' }
 };
 
 function build(q) {
@@ -842,6 +969,16 @@ function build(q) {
   } else if (q.kind === 'chart_bar') {
     plan = planChart(p.labels, p.values);
     topic = '条形统计图';
+  } else if (q.kind === 'vertical_mul') {
+    plan = planMul(p.a, p.b);
+    topic = '乘法竖式';
+  } else if (q.kind === 'vertical_div') {
+    plan = planDiv(p.a, p.b);
+    topic = '除法竖式';
+  } else if (q.kind === 'expression') {
+    // 泛化兜底：任意加减乘除/括号/分数/小数算式，走分步求值引擎
+    plan = require('./expression.js').planExpression(p.expr);
+    topic = '脱式计算';
   }
 
   if (!plan) return null;
@@ -862,6 +999,8 @@ function build(q) {
 module.exports = {
   planAdd: planAdd,
   planSub: planSub,
+  planMul: planMul,
+  planDiv: planDiv,
   planBarMore: planBarMore,
   planBarSumDiff: planBarSumDiff,
   planFracAdd: planFracAdd,

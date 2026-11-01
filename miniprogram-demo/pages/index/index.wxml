@@ -1,7 +1,7 @@
 <view class="page">
   <view class="topbar">
     <view class="brand">数学小步</view>
-    <view class="ver">v0.5</view>
+    <view class="ver">v0.6</view>
     <view class="count">{{solved}} 题已讲</view>
   </view>
 
@@ -31,7 +31,7 @@
         <text class="chevron">›</text>
       </view>
 
-      <view class="demo-note">v0.5：已接入真实拍照 + 八类讲解原语（竖式、线段图、面积模型、数轴、小棒计数器、几何板、天平方程、统计图）。「看示例题」会随机抽 3 类演示。</view>
+      <view class="demo-note">v0.6：新增乘法/除法竖式 + 通用脱式计算（加减乘除、括号、分数、小数都能分步讲）。「看示例题」会随机抽 3 类演示。</view>
     </view>
   </block>
 
@@ -225,6 +225,19 @@
               </view>
             </view>
             <view class="cheq" wx:if="{{snap.eq}}">{{snap.eq}}</view>
+          </view>
+        </block>
+
+        <block wx:elif="{{snap.kind === 'expression'}}">
+          <view class="exwrap">
+            <view class="exline">{{snap.expr}}</view>
+            <view class="exstep" wx:if="{{snap.aText}}">
+              <text class="exfocus">{{snap.aText}} {{snap.op}} {{snap.bText}}</text>
+              <text class="exres">= {{snap.result}}</text>
+            </view>
+            <view class="exfinal" wx:if="{{snap.final}}">
+              <text class="exfocus">{{snap.result}}</text>
+            </view>
           </view>
         </block>
       </view>

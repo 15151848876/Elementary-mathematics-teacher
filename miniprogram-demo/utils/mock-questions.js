@@ -92,17 +92,50 @@ function qChart() {
 }
 
 /* 轮换：竖式必出（第 1 题固定），另从剩余七类里随机抽 2 题（保证新原语能随机出现，且竖式稳定可见） */
+/* 竖式乘法 */
+function qVerticalMul() {
+  var a = rnd(12, 98);
+  var b = rnd(3, 9);
+  return { no: 2, stem: a + ' × ' + b + ' = ?', kind: 'vertical_mul', params: { a: a, b: b }, confidence: rnd(92, 98) };
+}
+
+/* 竖式除法 */
+function qVerticalDiv() {
+  var b = rnd(3, 9);
+  var q = rnd(10, 40);
+  var a = b * q;
+  return { no: 3, stem: a + ' ÷ ' + b + ' = ?', kind: 'vertical_div', params: { a: a, b: b }, confidence: rnd(92, 98) };
+}
+
+/* 综合运算（脱式计算） */
+function qExpression() {
+  var exps = [
+    { e: '8×3+4', ans: '28' },
+    { e: '(8+6)×3', ans: '42' },
+    { e: '2+3×4', ans: '14' },
+    { e: '1/2+1/3', ans: '5/6' },
+    { e: '0.5+0.25', ans: '0.75' },
+    { e: '100-25÷5', ans: '95' },
+    { e: '7×(2+3)', ans: '35' },
+    { e: '36÷(4+5)', ans: '4' }
+  ];
+  var p = pick(exps);
+  return { no: 4, stem: p.e + ' = ?', kind: 'expression', params: { expr: p.e }, confidence: rnd(90, 97) };
+}
+
 function mockQuestions() {
   // 第 1 题固定竖式（加法或减法交替，覆盖两种竖式）
   var first = Math.random() < 0.5 ? qVerticalAdd() : qVerticalSub();
-  // 其余 7 类洗牌取 2
+  // 第 2 题固定一个「乘除/综合运算」类（保证新引擎可见），第 3 题从其余类随机抽
+  var calc = pick([qVerticalMul, qVerticalDiv, qExpression]);
   var rest = [qBarMore, qFracAdd, qNumberLine, qCounter, qGeoBoard, qBalance, qChart];
   var idx = [0, 1, 2, 3, 4, 5, 6];
   for (var i = idx.length - 1; i > 0; i--) {
     var j = rnd(0, i);
     var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
   }
-  var picked = [first].concat(idx.slice(0, 2).map(function (k) { return rest[k](); }));
+  var third = rest[idx[0]]();
+  var picked = [first, calc(), third];
   return picked;
 }
 
