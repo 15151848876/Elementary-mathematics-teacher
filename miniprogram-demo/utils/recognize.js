@@ -16,18 +16,24 @@
 var cloud = require('./cloud.js');
 var MODEL_ID = 'glm-5.3-flash'; // 多模态视觉模型，可换成目录里其它 supportsImages 的模型
 
-var KINDS = ['vertical_add', 'vertical_sub', 'bar_more', 'bar_sumdiff', 'frac_add'];
+var KINDS = ['vertical_add', 'vertical_sub', 'bar_more', 'bar_sumdiff', 'frac_add', 'numberline_add', 'numberline_sub', 'counter_add', 'geoboard_rect', 'balance_eq', 'chart_bar'];
 
 var SYSTEM_PROMPT = [
   '你是小学数学试卷识别器。输入一张试卷照片，你要逐题识别，输出严格的 JSON。',
   '输出格式：{"questions":[{"no":题号(整数),"stem":"题干原文","kind":"题型代码","params":{},"confidence":0到100的整数}]}',
-  '题型代码与 params 必须严格从下面五种里选，认不出的题直接跳过，不要编造：',
+  '题型代码与 params 必须严格从下面十一种里选，认不出的题直接跳过，不要编造：',
   '1. vertical_add —— 两位/三位数加法算式。params: {"a":第一个数,"b":第二个数}',
   '2. vertical_sub —— 两位/三位数减法算式。params: {"a":被减数,"b":减数}',
   '3. bar_more —— "A 有 x 个，B 比 A 多/少 d 个，求两人一共"类应用题。params: {"a":A的数量,"d":多或少的数量,"unit":单位字}',
   '4. bar_sumdiff —— "两数之和是 S，相差 D，求两数"类和差应用题。params: {"S":和,"D":差,"unit":单位字}',
   '5. frac_add —— 异分母分数加法。params: {"a":分子1,"b":分母1,"c":分子2,"d":分母2}',
-  '要求：数字必须从图中如实识别，不得推测或修正；只输出 JSON，不要任何解释文字。'
+  '6. numberline_add —— 用数轴表示 a + b 的加法。params: {"a":加数,"b":加数}',
+  '7. numberline_sub —— 用数轴表示 a − b 的减法。params: {"a":被减数,"b":减数}',
+  '8. counter_add —— 用小棒或计数器讲解的进位加法（两位数+两位数）。params: {"a":第一个数,"b":第二个数}',
+  '9. geoboard_rect —— 在方格纸上求长方形周长/面积（r 行 c 列）。params: {"r":行数(宽),"c":列数(长)}',
+  '10. balance_eq —— 天平表示的一步方程 x + a = c。params: {"a":已知加数,"b":未知数个数(通常1),"c":和}',
+  '11. chart_bar —— 条形统计图（几个类别各有多少）。params: {"labels":["类别1","类别2",...],"values":[数值1,数值2,...]}',
+  '要求：数字必须从图中如实识别，不得推测或修正；labels/values 长度一致；只输出 JSON，不要任何解释文字。'
 ].join('\n');
 
 /* 读照片为 base64 data URL */

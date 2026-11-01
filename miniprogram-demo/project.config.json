@@ -1,7 +1,7 @@
 {
   "miniprogramRoot": "./",
   "compileType": "miniprogram",
-  "appid": "wxec5383611ef51aa4",
+  "appid": "wx48f0c29e30435cda",
   "projectname": "math-step-demo",
   "setting": {
     "urlCheck": false,
@@ -10,8 +10,28 @@
     "minified": false,
     "enhance": true,
     "packNpmManually": false,
-    "packNpmRelationList": []
+    "packNpmRelationList": [],
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
   },
   "condition": {},
-  "isGameTourist": false
+  "isGameTourist": false,
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
 }

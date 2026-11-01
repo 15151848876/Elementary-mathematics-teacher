@@ -525,12 +525,283 @@ function planFracAdd(a, b, c, d) {
   return { kind: 'area', answer: ansTxt, steps: steps };
 }
 
+/* ============================ 数轴 ============================ */
+
+function planNumberLine(a, b, op) {
+  if (op === '-') { if (a < b) return null; }
+  var result = op === '+' ? a + b : a - b;
+  var maxU = Math.max(a, op === '+' ? result : a) + 4;
+  var unitW = 100 / maxU;
+  var steps = [];
+
+  function marks(cur, hlFrom, hlTo) {
+    var arr = [];
+    for (var i = 0; i <= maxU; i++) {
+      var cls = '';
+      if (hlFrom !== null && hlFrom !== undefined && i === hlFrom) cls = 'start';
+      else if (hlTo !== null && hlTo !== undefined && i === hlTo) cls = 'end';
+      else if (hlFrom !== null && hlTo !== undefined && hlFrom !== hlTo && i > hlFrom && i < hlTo) cls = 'trail';
+      arr.push({ i: i, label: (i % 5 === 0 ? String(i) : ''), cls: cls });
+    }
+    return arr;
+  }
+
+  steps.push({
+    title: '先标出起点',
+    text: '数轴上从 0 开始。先把起点 ' + a + ' 找到，站在这里。',
+    snap: { kind: 'numberline', unitW: unitW, marks: marks(a, null, null), jump: null, eq: '' }
+  });
+
+  if (op === '+') {
+    steps.push({
+      title: '往右跳 ' + b + ' 步',
+      text: '加 ' + b + '，就是往右（变大的方向）跳 ' + b + ' 格。',
+      snap: { kind: 'numberline', unitW: unitW, marks: marks(a, a, a + b), jump: { from: a, to: a + b, n: b }, eq: '' }
+    });
+  } else {
+    steps.push({
+      title: '往左跳 ' + b + ' 步',
+      text: '减 ' + b + '，就是往左（变小的方向）跳 ' + b + ' 格。',
+      snap: { kind: 'numberline', unitW: unitW, marks: marks(a, a, a - b), jump: { from: a, to: a - b, n: b }, eq: '' }
+    });
+  }
+
+  steps.push({
+    title: '落在 ' + result,
+    text: '从 ' + a + ' 出发，' + (op === '+' ? '往右' : '往左') + '跳 ' + b + ' 格，落在 ' + result + '。所以 ' + a + ' ' + op + ' ' + b + ' = ' + result + '。',
+    snap: { kind: 'numberline', unitW: unitW, marks: marks(a, a, result), jump: { from: a, to: result, n: b }, eq: a + ' ' + op + ' ' + b + ' = ' + result }
+  });
+
+  return { kind: 'numberline', answer: String(result), steps: steps };
+}
+
+/* ============================ 小棒与计数器 ============================ */
+
+function planCounter(a, b) {
+  var sum = a + b;
+  var steps = [];
+  var aBundles = Math.floor(a / 10), aOnes = a % 10;
+  var bBundles = Math.floor(b / 10), bOnes = b % 10;
+  var carry = (aOnes + bOnes) >= 10;
+
+  function group(n, hiB, hiO, clsB, clsO) {
+    var bundles = [], ones = [];
+    for (var i = 0; i < Math.floor(n / 10); i++) bundles.push({ i: i, cls: (hiB === i) ? clsB : '' });
+    for (var j = 0; j < n % 10; j++) ones.push({ i: j, cls: (hiO === j) ? clsO : '' });
+    return { bundles: bundles, ones: ones };
+  }
+
+  steps.push({
+    title: '先摆出 ' + a,
+    text: a + ' 可以看成 ' + Math.floor(a / 10) + ' 捆（每捆 10 根）+ ' + (a % 10) + ' 根。',
+    snap: { kind: 'counter', a: group(a, null, null), b: group(0, null, null), carry: false, carryText: '', eq: '' }
+  });
+
+  steps.push({
+    title: '再摆出 ' + b,
+    text: b + ' 是 ' + Math.floor(b / 10) + ' 捆 + ' + (b % 10) + ' 根，摆到下面。',
+    snap: { kind: 'counter', a: group(a, null, null), b: group(b, null, null), carry: false, carryText: '', eq: '' }
+  });
+
+  steps.push({
+    title: '把散的几根合起来',
+    text: '散的 ' + aOnes + ' 根 + ' + bOnes + ' 根 = ' + (aOnes + bOnes) + ' 根。',
+    snap: { kind: 'counter', a: group(a, null, null, null, 'hi'), b: group(b, null, null, null, 'hi'), carry: carry, carryText: '', eq: '' }
+  });
+
+  if (carry) {
+    steps.push({
+      title: '满十根捆成一捆',
+      text: '先自己想一想，再选答案。',
+      ask: {
+        question: aOnes + ' + ' + bOnes + ' = ' + (aOnes + bOnes) + '，满十了。可以捆成几捆？',
+        options: ['捆成 1 捆，剩 ' + ((aOnes + bOnes) % 10) + ' 根', '捆成 2 捆', '不捆'],
+        answer: 0,
+        hint: '每 10 根捆成 1 捆。' + (aOnes + bOnes) + ' 根里有 1 个十，捆成 1 捆，还剩 ' + ((aOnes + bOnes) % 10) + ' 根。'
+      },
+      snap: { kind: 'counter', a: group(a, null, null, null, 'hi'), b: group(b, null, null, null, 'hi'), carry: true, carryText: '10 根 → 1 捆', eq: '' }
+    });
+
+    steps.push({
+      title: '捆好之后',
+      text: '多出来的 1 捆，和原来的 ' + (aBundles + bBundles) + ' 捆放到一起，一共 ' + (aBundles + bBundles + 1) + ' 捆，剩 ' + ((aOnes + bOnes) % 10) + ' 根。',
+      snap: { kind: 'counter', a: group(a, null, null), b: group(b, null, null), carry: true, carryText: '多 1 捆', eq: '' }
+    });
+  }
+
+  steps.push({
+    title: '答案是 ' + sum,
+    text: '一共 ' + Math.floor(sum / 10) + ' 捆 + ' + (sum % 10) + ' 根 = ' + sum + '。所以 ' + a + ' + ' + b + ' = ' + sum + '。',
+    snap: { kind: 'counter', a: group(a, null, null), b: group(b, null, null), carry: carry, carryText: '', eq: a + ' + ' + b + ' = ' + sum }
+  });
+
+  return { kind: 'counter', answer: String(sum), steps: steps };
+}
+
+/* ============================ 几何板：数格子算面积/周长 ============================ */
+
+function planGeoBoard(r, c) {
+  var area = r * c;
+  var peri = 2 * (r + c);
+  var steps = [];
+
+  function cells(hlRow, hlCol, hlAll) {
+    var out = [];
+    for (var i = 0; i < r; i++) {
+      for (var j = 0; j < c; j++) {
+        var cls = '';
+        if (hlAll) cls = 'all';
+        else if (hlRow === i || hlCol === j) cls = 'edge';
+        out.push({ i: i, j: j, cls: cls });
+      }
+    }
+    return out;
+  }
+
+  steps.push({
+    title: '在方格纸上画一个长方形',
+    text: '长 ' + c + ' 格，宽 ' + r + ' 格。每一小格就是 1 个单位。',
+    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, false), hl: null, eq: '' }
+  });
+
+  steps.push({
+    title: '先数一周有多少格（周长）',
+    text: '沿着边数：上面 ' + c + ' 格，下面 ' + c + ' 格，左边 ' + r + ' 格，右边 ' + r + ' 格。',
+    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(0, 0, false), hl: 'edge', eq: '' }
+  });
+
+  steps.push({
+    title: '算周长',
+    text: '周长 =（' + c + ' + ' + r + '）× 2 = ' + peri + '。数的是“围一圈”的格子数。',
+    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'edge', eq: '周长 = (' + c + ' + ' + r + ') × 2 = ' + peri }
+  });
+
+  steps.push({
+    title: '再数一共铺了几格（面积）',
+    text: '面积是“铺满”一共用了几个格子。数一数：' + r + ' 行，每行 ' + c + ' 格。',
+    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'area', eq: '' }
+  });
+
+  steps.push({
+    title: '算面积',
+    text: '面积 = ' + r + ' × ' + c + ' = ' + area + '。周长是“围一圈”，面积是“铺满”，别弄混。',
+    snap: { kind: 'geoboard', rows: r, cols: c, cells: cells(-1, -1, true), hl: 'area', eq: '面积 = ' + r + ' × ' + c + ' = ' + area }
+  });
+
+  return { kind: 'geoboard', answer: '周长 ' + peri + '，面积 ' + area, steps: steps };
+}
+
+/* ============================ 天平与简易方程 ============================ */
+
+function planBalance(a, b, c) {
+  var x = c - a;
+  var total = a + b;
+  var steps = [];
+
+  // 把数量转成「一长串 x / 数字」的数组，渲染层直接遍历
+  function ones(n) { var arr = []; for (var i = 0; i < n; i++) arr.push(i); return arr; }
+
+  steps.push({
+    title: '天平两边画出来',
+    text: '左边：' + a + ' 个 + x 个未知。右边：' + c + ' 个。天平是平的，说明两边一样重。',
+    snap: { kind: 'balance', x: ones(b), left: ones(a), right: ones(c), eq: 'x + ' + a + ' = ' + c }
+  });
+
+  steps.push({
+    title: '两边同时拿掉 ' + a + ' 个',
+    text: '为了把 x 单独留下，两边同时拿走 ' + a + ' 个。天平还是平的，因为两边减的一样多。',
+    snap: { kind: 'balance', x: ones(b), left: ones(a), right: ones(c), eq: 'x + ' + a + ' − ' + a + ' = ' + c + ' − ' + a }
+  });
+
+  steps.push({
+    title: '左边只剩 x',
+    text: '左边 ' + a + ' − ' + a + ' = 0，只剩 x。右边 ' + c + ' − ' + a + ' = ' + x + '。',
+    snap: { kind: 'balance', x: ones(b), left: [], right: ones(c), eq: 'x = ' + c + ' − ' + a }
+  });
+
+  steps.push({
+    title: '想一想 x 是几',
+    text: '先自己想一想，再选答案。',
+    ask: {
+      question: 'x = ' + c + ' − ' + a + '，x 等于几？',
+      options: [String(x), String(c), String(a)],
+      answer: 0,
+      hint: c + ' 拿走 ' + a + ' 个，剩 ' + x + ' 个。所以 x = ' + x + '。'
+    },
+    snap: { kind: 'balance', x: ones(b), left: [], right: ones(c), eq: 'x = ' + c + ' − ' + a + ' = ?' }
+  });
+
+  steps.push({
+    title: '答案是 x = ' + x,
+    text: 'x = ' + x + '。验算：' + x + ' + ' + a + ' = ' + c + '，对得上。',
+    snap: { kind: 'balance', x: ones(b), left: [], right: ones(x), eq: 'x = ' + x }
+  });
+
+  return { kind: 'balance', answer: 'x = ' + x, steps: steps };
+}
+
+/* ============================ 统计图 ============================ */
+
+function planChart(labels, values) {
+  var n = values.length;
+  var sum = 0, max = 0, min = Infinity;
+  for (var i = 0; i < n; i++) {
+    sum += values[i];
+    if (values[i] > max) max = values[i];
+    if (values[i] < min) min = values[i];
+  }
+  var steps = [];
+
+  function bars(hl) {
+    return values.map(function (v, i) {
+      return { i: i, label: labels[i], v: v, pct: (v / max) * 100, cls: (hl === i) ? 'hi' : '' };
+    });
+  }
+
+  steps.push({
+    title: '把数据做成条形图',
+    text: '每个「' + labels.join('、') + '」是一根柱子，柱子越高表示数量越多。',
+    snap: { kind: 'chart', chartType: 'bar', bars: bars(-1), eq: '' }
+  });
+
+  steps.push({
+    title: '最高的是？',
+    text: '先自己看一看，再选答案。',
+    ask: {
+      question: '哪一项的数量最多？',
+      options: labels.slice(0, 4),
+      answer: values.indexOf(max) < 4 ? values.indexOf(max) : 0,
+      hint: '最高的柱子是「' + labels[values.indexOf(max)] + '」，有 ' + max + ' 个。'
+    },
+    snap: { kind: 'chart', chartType: 'bar', bars: bars(values.indexOf(max)), eq: '' }
+  });
+
+  steps.push({
+    title: '合起来数一数',
+    text: '一共 = ' + values.join(' + ') + ' = ' + sum + '。',
+    snap: { kind: 'chart', chartType: 'bar', bars: bars(-1), eq: values.join(' + ') + ' = ' + sum }
+  });
+
+  steps.push({
+    title: '比一比：最多比最少多多少？',
+    text: '最多 ' + max + '，最少 ' + min + '。相差 ' + (max - min) + '。',
+    snap: { kind: 'chart', chartType: 'bar', bars: bars(-1), eq: max + ' − ' + min + ' = ' + (max - min) }
+  });
+
+  return { kind: 'chart', answer: '总数 ' + sum + '，最多 ' + max, steps: steps };
+}
+
 /* ============================ 路由：识别结果 → 讲法 ============================ */
 
 var META = {
   vertical: { templateName: '竖式板', tag: '竖式计算' },
   bar: { templateName: '线段图', tag: '应用题' },
-  area: { templateName: '面积模型', tag: '分数计算' }
+  area: { templateName: '面积模型', tag: '分数计算' },
+  numberline: { templateName: '数轴', tag: '数的加减' },
+  counter: { templateName: '小棒与计数器', tag: '数的认识' },
+  geoboard: { templateName: '几何板', tag: '周长与面积' },
+  balance: { templateName: '天平方程', tag: '简易方程' },
+  chart: { templateName: '统计图', tag: '数据统计' }
 };
 
 function build(q) {
@@ -553,6 +824,24 @@ function build(q) {
   } else if (q.kind === 'frac_add') {
     plan = planFracAdd(p.a, p.b, p.c, p.d);
     topic = '异分母分数加法';
+  } else if (q.kind === 'numberline_add') {
+    plan = planNumberLine(p.a, p.b, '+');
+    topic = '数轴加法';
+  } else if (q.kind === 'numberline_sub') {
+    plan = planNumberLine(p.a, p.b, '-');
+    topic = '数轴减法';
+  } else if (q.kind === 'counter_add') {
+    plan = planCounter(p.a, p.b);
+    topic = '小棒计数器进位加法';
+  } else if (q.kind === 'geoboard_rect') {
+    plan = planGeoBoard(p.r, p.c);
+    topic = '周长与面积';
+  } else if (q.kind === 'balance_eq') {
+    plan = planBalance(p.a, p.b, p.c);
+    topic = '天平解方程';
+  } else if (q.kind === 'chart_bar') {
+    plan = planChart(p.labels, p.values);
+    topic = '条形统计图';
   }
 
   if (!plan) return null;
@@ -576,5 +865,10 @@ module.exports = {
   planBarMore: planBarMore,
   planBarSumDiff: planBarSumDiff,
   planFracAdd: planFracAdd,
+  planNumberLine: planNumberLine,
+  planCounter: planCounter,
+  planGeoBoard: planGeoBoard,
+  planBalance: planBalance,
+  planChart: planChart,
   build: build
 };

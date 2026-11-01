@@ -44,6 +44,61 @@
 .acell.b{background:#ffd7b5;border-color:#f0a86a}
 .aeq{text-align:center;margin-top:20rpx;font-size:26rpx;font-weight:650;color:#2b3a5c}
 
+/* ---------- 数轴 ---------- */
+.nlwrap{padding:40rpx 20rpx 20rpx}
+.nltrack{position:relative;height:110rpx;border-bottom:3rpx solid #2b3a5c}
+.nlmark{position:absolute;top:0;transform:translateX(-50%)}
+.nltick{display:block;width:2rpx;height:18rpx;background:#9aa3b8;margin:0 auto}
+.nllabel{display:block;text-align:center;font-size:20rpx;color:#7a8499;margin-top:6rpx}
+.nlmark.start .nllabel,.nlmark.end .nllabel{color:#3b6cff;font-weight:700}
+.nlmark.trail{background:rgba(59,108,255,.08)}
+.nljump{position:absolute;top:30rpx;height:34rpx;border-top:4rpx solid #3b6cff;border-radius:4rpx}
+.nljump::after{content:'';position:absolute;right:-2rpx;top:-12rpx;border:8rpx solid transparent;border-left-color:#3b6cff}
+.nleq{text-align:center;margin-top:28rpx;font-size:28rpx;font-weight:650;color:#2b3a5c}
+
+/* ---------- 小棒与计数器 ---------- */
+.ctwrap{padding:20rpx 10rpx}
+.ctgroup{margin-bottom:18rpx}
+.ctlabel{font-size:22rpx;color:#7a8499;margin-bottom:10rpx}
+.ctbundles{display:flex;flex-wrap:wrap;gap:12rpx;align-items:flex-end}
+.ctbundle{width:22rpx;height:60rpx;border-radius:6rpx;background:linear-gradient(180deg,#ffb25e,#f28a3a);border:2rpx solid #d9741f}
+.ctbundle.hi{background:#3b6cff;border-color:#2447c9}
+.ctone{width:22rpx;height:22rpx;border-radius:4rpx;background:#ffd9a8;border:2rpx solid #f0a86a}
+.ctone.hi{background:#3b6cff;border-color:#2447c9}
+.ctplus{text-align:center;font-size:30rpx;color:#9aa3b8;margin:4rpx 0}
+.ctcarry{margin:12rpx 0;padding:12rpx 16rpx;border-radius:12rpx;background:#fff1e5;color:#c2560e;font-size:22rpx;font-weight:650;text-align:center}
+.cteq{text-align:center;margin-top:16rpx;font-size:28rpx;font-weight:650;color:#0b7d52}
+
+/* ---------- 几何板 ---------- */
+.gbwrap{padding:20rpx 10rpx}
+.gbgrid{display:grid;gap:4rpx;max-width:520rpx;margin:0 auto}
+.gbcell{aspect-ratio:1;border-radius:6rpx;background:#f2f5fb;border:2rpx solid #d7dfeb;box-sizing:border-box}
+.gbcell.edge{background:#d5e0ff;border-color:#8fa9ee}
+.gbcell.all{background:#c3d4ff;border-color:#8fa9ee}
+.gbeq{text-align:center;margin-top:24rpx;font-size:28rpx;font-weight:650;color:#2b3a5c}
+
+/* ---------- 天平方程 ---------- */
+.blwrap{padding:30rpx 10rpx}
+.blbeam{display:flex;align-items:flex-start;justify-content:center}
+.blpan{width:180rpx;min-height:120rpx;background:#fff;border:3rpx solid #c3cbdb;border-radius:0 0 60rpx 60rpx;border-top:none;padding:16rpx 14rpx 20rpx}
+.blpan.left{margin-right:8rpx}
+.blpan.right{margin-left:8rpx}
+.blpost{width:12rpx;height:90rpx;background:#9aa3b8;border-radius:6rpx;margin-top:10rpx}
+.blitems{display:flex;flex-wrap:wrap;gap:8rpx;justify-content:center}
+.blnum{width:34rpx;height:34rpx;border-radius:8rpx;background:#e9efff;color:#2447c9;font-size:22rpx;font-weight:650;display:flex;align-items:center;justify-content:center}
+.blx{width:34rpx;height:34rpx;border-radius:8rpx;background:#fff1e5;color:#c2560e;font-size:22rpx;font-weight:700;display:flex;align-items:center;justify-content:center;border:2rpx dashed #ff9a52}
+.bleq{text-align:center;margin-top:26rpx;font-size:28rpx;font-weight:650;color:#2b3a5c}
+
+/* ---------- 统计图 ---------- */
+.chwrap{padding:20rpx 10rpx}
+.chplot{display:flex;align-items:flex-end;justify-content:space-around;height:280rpx;padding:10rpx 6rpx 0}
+.chcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;flex:1}
+.chbar{width:46rpx;border-radius:8rpx 8rpx 0 0;background:linear-gradient(180deg,#3b6cff,#5a52e8);min-height:4rpx;transition:height .4s}
+.chcol.hi .chbar{background:linear-gradient(180deg,#ff9a52,#f28a3a)}
+.chval{font-size:22rpx;font-weight:700;color:#3c465c;margin-top:6rpx}
+.chlbl{font-size:20rpx;color:#7a8499;margin-top:4rpx}
+.cheq{text-align:center;margin-top:20rpx;font-size:26rpx;font-weight:650;color:#2b3a5c}
+
 /* ---------- 拍照与结果 ---------- */
 .shot{position:absolute;left:0;top:0;width:100%;height:100%}
 .thumb{width:100%;height:190rpx;border-radius:18rpx;margin-bottom:18rpx;background:#e9eef7}

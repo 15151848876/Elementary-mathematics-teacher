@@ -9,26 +9,87 @@ function pick(arr) {
   return arr[rnd(0, arr.length - 1)];
 }
 
-function mockQuestions() {
+/* 竖式加法（保证至少一次进位） */
+function qVerticalAdd() {
   var a = rnd(16, 89);
   var b = rnd(11, 79);
-  if ((a % 10) + (b % 10) < 10) b = b + 2; // 保证至少一次进位，教学价值更高
+  if ((a % 10) + (b % 10) < 10) b = b + 2;
+  return { no: 1, stem: a + ' + ' + b + ' = ?', kind: 'vertical_add', params: { a: a, b: b }, confidence: rnd(93, 99) };
+}
 
+/* 多几少几 */
+function qBarMore() {
   var m = rnd(8, 36);
   var d = rnd(2, 9);
   var unit = pick(UNIT_POOL);
+  return { no: 2, stem: '小明有 ' + m + ' ' + unit + '，小红比小明多 ' + d + ' ' + unit + '。两人一共有多少' + unit + '？', kind: 'bar_more', params: { a: m, d: d, unit: unit }, confidence: rnd(91, 98) };
+}
 
+/* 异分母分数加法 */
+function qFracAdd() {
   var den1 = rnd(2, 6);
   var den2 = rnd(2, 6);
   if (den1 === den2) den2 = den1 + 1;
   var num1 = rnd(1, den1 - 1);
   var num2 = rnd(1, den2 - 1);
+  return { no: 3, stem: num1 + '/' + den1 + ' + ' + num2 + '/' + den2 + ' = ?', kind: 'frac_add', params: { a: num1, b: den1, c: num2, d: den2 }, confidence: rnd(90, 97) };
+}
 
-  return [
-    { no: 3, stem: a + ' + ' + b + ' = ?', kind: 'vertical_add', params: { a: a, b: b }, confidence: rnd(93, 99) },
-    { no: 5, stem: '小明有 ' + m + ' ' + unit + '，小红比小明多 ' + d + ' ' + unit + '。两人一共有多少' + unit + '？', kind: 'bar_more', params: { a: m, d: d, unit: unit }, confidence: rnd(91, 98) },
-    { no: 8, stem: num1 + '/' + den1 + ' + ' + num2 + '/' + den2 + ' = ?', kind: 'frac_add', params: { a: num1, b: den1, c: num2, d: den2 }, confidence: rnd(90, 97) }
-  ];
+/* 数轴加法/减法 */
+function qNumberLine() {
+  var op = Math.random() < 0.5 ? '+' : '-';
+  var a = op === '+' ? rnd(3, 15) : rnd(8, 20);
+  var b = op === '+' ? rnd(2, 8) : rnd(2, Math.min(8, a - 1));
+  return {
+    no: 4,
+    stem: '在数轴上表示：' + a + ' ' + op + ' ' + b + ' = ?',
+    kind: op === '+' ? 'numberline_add' : 'numberline_sub',
+    params: { a: a, b: b },
+    confidence: rnd(90, 98)
+  };
+}
+
+/* 小棒计数器进位加法 */
+function qCounter() {
+  var a = rnd(23, 48);
+  var b = rnd(23, 48);
+  if ((a % 10) + (b % 10) < 10) b = b + (10 - ((a % 10) + (b % 10)) % 10);
+  if (b > 99) b = b - 10;
+  return { no: 5, stem: '用小棒摆一摆：' + a + ' + ' + b + ' = ?', kind: 'counter_add', params: { a: a, b: b }, confidence: rnd(92, 98) };
+}
+
+/* 几何板：长方形周长/面积 */
+function qGeoBoard() {
+  var r = rnd(3, 5);
+  var c = rnd(4, 6);
+  return { no: 6, stem: '方格纸上的长方形，宽 ' + r + ' 格、长 ' + c + ' 格。它的周长和面积各是多少？', kind: 'geoboard_rect', params: { r: r, c: c }, confidence: rnd(90, 97) };
+}
+
+/* 天平方程 x + a = c */
+function qBalance() {
+  var a = rnd(2, 9);
+  var x = rnd(3, 9);
+  var c = a + x;
+  return { no: 7, stem: '看图列方程：x + ' + a + ' = ' + c + '，x = ?', kind: 'balance_eq', params: { a: a, b: 1, c: c }, confidence: rnd(91, 98) };
+}
+
+/* 条形统计图 */
+function qChart() {
+  var labels = ['苹果', '香蕉', '橘子'];
+  var values = [rnd(4, 12), rnd(4, 12), rnd(4, 12)];
+  return { no: 8, stem: '统计水果数量：苹果 ' + values[0] + ' 个，香蕉 ' + values[1] + ' 个，橘子 ' + values[2] + ' 个。', kind: 'chart_bar', params: { labels: labels, values: values }, confidence: rnd(90, 97) };
+}
+
+/* 轮换：每次从八类里挑 3 题（保证新原语能随机出现） */
+function mockQuestions() {
+  var all = [qVerticalAdd, qBarMore, qFracAdd, qNumberLine, qCounter, qGeoBoard, qBalance, qChart];
+  // 洗牌，取前 3
+  var idx = [0, 1, 2, 3, 4, 5, 6, 7];
+  for (var i = idx.length - 1; i > 0; i--) {
+    var j = rnd(0, i);
+    var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+  }
+  return idx.slice(0, 3).map(function (k) { return all[k](); });
 }
 
 module.exports = mockQuestions;
