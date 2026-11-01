@@ -1321,6 +1321,18 @@ function build(q) {
 
   if (!plan) return null;
 
+  // shape 快照里未知量统一显示「？」，绝不把 null/undefined 漏到界面上
+  if (plan.kind === 'shape') {
+    plan.steps.forEach(function (s) {
+      var snap = s.snap;
+      if (snap && snap.kind === 'shape') {
+        ['a', 'b', 'c', 'd'].forEach(function (k) {
+          if (snap[k] === null || snap[k] === undefined || snap[k] === '') snap[k] = '?';
+        });
+      }
+    });
+  }
+
   var meta = META[plan.kind];
   return {
     stem: q.stem,
